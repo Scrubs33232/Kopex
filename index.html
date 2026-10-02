@@ -722,7 +722,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
 
   <!-- ================= COPY ENGINE ================= -->
   <div class="phead" data-view="copy">
-    <div><h1>Copy Engine</h1><p>Copy any Pump.fun or FOMO wallet, or a trader from the leaderboard. Each copy runs on its own budget, stop-loss / take-profit and safety checks, and you can stop it any time.</p><p class="practice">Practice mode: copy trades are simulated and never use the SOL in your wallet. Live copy trading isn't available yet.</p></div>
+    <div><h1>Copy Engine</h1><p>Copy any Pump.fun or FOMO wallet, or a trader from the leaderboard. Each copy runs on its own budget, stop-loss / take-profit and safety checks, and you can stop it any time.</p><p class="practice" id="copy-mode-note">Practice mode: copy trades are simulated and never use the SOL in your wallet. Live copy trading isn't available yet.</p></div>
     <span class="spacer"></span>
     <button class="btn" data-go="leaderboard">Browse leaderboard</button>
   </div>
@@ -844,7 +844,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
           <div class="enc-row"><span class="dot"></span><div><div class="k">Wallet keys</div><div class="s">AES-256-GCM, one key per account, bound to your user ID</div></div><span class="tag">on</span></div>
           <div class="enc-row"><span class="dot"></span><div><div class="k">Master key</div><div class="s">Server secret in Supabase · never sent to any browser</div></div><span class="tag">on</span></div>
           <div class="enc-row"><span class="dot"></span><div><div class="k">Withdrawals</div><div class="s">Signed on the server · daily limit per account</div></div><span class="tag">on</span></div>
-          <div class="enc-row"><span class="dot"></span><div><div class="k">Copy trading</div><div class="s">Practice mode · never touches your SOL</div></div><span class="tag n">practice</span></div>
+          <div class="enc-row"><span class="dot"></span><div><div class="k">Copy trading</div><div class="s" id="vault-copy">Practice mode · never touches your SOL</div></div><span class="tag n" id="vault-copy-tag">practice</span></div>
         </div>
       </div>
 
@@ -895,14 +895,14 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
     </div>
     <div class="m-body">
       <div class="sec">
-        <div class="sec-h"><h3>Practice budget</h3><p>Simulated money for this copy</p></div>
+        <div class="sec-h"><h3 id="b-title">Practice budget</h3><p id="b-sub">Simulated money for this copy</p></div>
         <div class="pills">
-          <div class="inp-suf" style="width:160px"><input class="inp" id="budget" type="number" min="10" step="10" value="500" aria-label="Practice budget for this copy"><span>$</span></div>
+          <div class="inp-suf" style="width:160px"><input class="inp" id="budget" type="number" min="0.01" step="any" value="500" aria-label="Budget for this copy"><span id="b-suf">$</span></div>
           <button class="pill" data-ba="100">$100</button>
           <button class="pill" data-ba="500">$500</button>
           <button class="pill" data-ba="1000">$1,000</button>
         </div>
-        <span class="note">Copy trading is in practice mode: trades are simulated and never use the SOL in your wallet.</span>
+        <span class="note" id="b-note">Copy trading is in practice mode: trades are simulated and never use the SOL in your wallet.</span>
         <div class="err" id="budget-err" hidden></div>
       </div>
       <div class="sec">
@@ -923,11 +923,11 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
       </div>
 
       <div class="sec">
-        <div class="sec-h"><h3>Jito priority</h3><p>Bundle tip paid to land ahead of the crowd</p></div>
+        <div class="sec-h"><h3>Speed</h3><p>Priority fee paid so your trade lands sooner</p></div>
         <div class="opts" id="fee">
-          <button class="opt" data-v="fast" aria-pressed="false"><b>Fast</b><small>0.0001 SOL · ~1.2s</small></button>
-          <button class="opt" data-v="turbo" aria-pressed="true"><b>Turbo</b><small>0.001 SOL · ~600ms</small></button>
-          <button class="opt" data-v="ultra" aria-pressed="false"><b>Ultra</b><small>0.005 SOL · ~400ms</small></button>
+          <button class="opt" data-v="fast" aria-pressed="false"><b>Fast</b><small>fee up to 0.0001 SOL</small></button>
+          <button class="opt" data-v="turbo" aria-pressed="true"><b>Turbo</b><small>fee up to 0.001 SOL</small></button>
+          <button class="opt" data-v="ultra" aria-pressed="false"><b>Ultra</b><small>fee up to 0.005 SOL</small></button>
         </div>
       </div>
 
@@ -962,10 +962,10 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
         <div class="guards">
           <label class="ck"><input type="checkbox" id="g-mint" checked> Mint authority revoked</label>
           <label class="ck"><input type="checkbox" id="g-freeze" checked> Freeze authority revoked</label>
-          <label class="ck"><input type="checkbox" id="g-lp" checked> LP burned or locked</label>
+          <label class="ck"><input type="checkbox" id="g-lp" checked> LP burned or locked <small class="g-soon" hidden>not checked yet</small></label>
           <label class="ck"><input type="checkbox" id="g-top" checked> Top 10 holders under 30%</label>
-          <label class="ck"><input type="checkbox" id="g-sim"> Sell simulation passes</label>
-          <label class="ck"><input type="checkbox" id="g-dev"> Dev wallet holds under 5%</label>
+          <label class="ck"><input type="checkbox" id="g-sim"> Sell simulation passes <small class="g-soon" hidden>not checked yet</small></label>
+          <label class="ck"><input type="checkbox" id="g-dev"> Dev wallet holds under 5% <small class="g-soon" hidden>not checked yet</small></label>
         </div>
         <div class="field" style="max-width:260px">
           <label for="g-liq">Minimum liquidity</label>
@@ -975,6 +975,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
     </div>
     <div class="m-foot">
       <div class="summary" id="summary"></div>
+      <div class="err" id="m-err" hidden style="flex-basis:100%"></div>
       <span class="spacer"></span>
       <button class="btn ghost" id="m-cancel">Cancel</button>
       <button class="btn primary" id="m-start">Start copying</button>
@@ -1538,6 +1539,7 @@ function setTab(view, push) {
   if (push) { try { history.replaceState(null, '', '#' + view); } catch (e) {} }
   requestAnimationFrame(() => chart.resize());
   if (view === 'picks') onPicksOpen();
+  if (LIVE && (view === 'copy' || view === 'terminal' || view === 'overview')) refreshLive();
 }
 document.addEventListener('click', e => {
   const d = e.target.closest('[data-deposit]');
@@ -1781,10 +1783,11 @@ function renderFunds() {
   $('#q-alloc').textContent = !session ? 'Sign in to get your own Solana deposit address'
     : !LIVE ? 'Real deposits work on mlrg.lol'
     : wallet.err ? wallet.err
-    : `${wallet.cluster === 'mainnet' ? 'Solana' : 'Solana ' + (wallet.cluster || '')} · copy trading is practice mode and doesn't use this SOL`;
+    : `${wallet.cluster === 'mainnet' ? 'Solana' : 'Solana ' + (wallet.cluster || '')} · live copy trades use this SOL`;
   if (typeof renderVaultWallet === 'function') renderVaultWallet();
 }
 function renderCopies() {
+  if (LIVE) return renderLiveCopies();
   const rows = [...active].map(([h, c]) => {
     const t = TR.find(x => x.h === h);
     return `<div class="cp">
@@ -1834,7 +1837,9 @@ function renderLB() {
         ? `<button class="btn ghost" data-copy="${t.h}"><span class="copying"><span class="dot pulse"></span>Copying</span></button>`
         : `<button class="btn" data-copy="${t.h}">Copy</button>`}</td>
     </tr>`).join('');
-  $$('#lb [data-copy]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.copy)));
+  $$('#lb [data-copy]').forEach(b => b.addEventListener('click', () => LIVE
+    ? (toast('That is an example trader. Paste a real wallet address to copy for real.'), setTab('copy', true), setTimeout(() => $('#wc-addr').focus(), 100))
+    : openModal(b.dataset.copy)));
 }
 $('#sort').addEventListener('change', e => { sortKey = e.target.value; renderLB(); });
 setInterval(() => {
@@ -1884,6 +1889,7 @@ function summary() {
 }
 function openModal(h) {
   if (!requireAuth(() => openModal(h), 'Sign in to start copy trading')) return;
+  realTarget = null; setModalMode(false);
   const t = TR.find(x => x.h === h); current = t; lastFocus = document.activeElement;
   $('#m-av').innerHTML = identicon(t.h);
   $('#m-title').textContent = (active.has(h) ? 'Edit copy · ' : 'Copy ') + t.h;
@@ -1900,7 +1906,7 @@ function openModal(h) {
 function budgetNote() { $('#budget-err').hidden = true; }
 $$('[data-ba]').forEach(b => b.addEventListener('click', () => { $('#budget').value = b.dataset.ba; budgetNote(); }));
 $('#budget').addEventListener('input', budgetNote);
-function closeModal() { $('#scrim').hidden = true; lastFocus && lastFocus.focus && lastFocus.focus(); }
+function closeModal() { $('#scrim').hidden = true; realTarget = null; lastFocus && lastFocus.focus && lastFocus.focus(); }
 $('#m-close').addEventListener('click', closeModal);
 $('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeModal(); });
 document.addEventListener('keydown', e => {
@@ -1918,6 +1924,11 @@ function stopCopy(h) {
   afterCopyChange();
 }
 $('#m-cancel').addEventListener('click', () => {
+  if (realTarget) {
+    const c = live.copies.find(x => x.target === realTarget.address && x.active);
+    if (c) liveStop(c.target);
+    return closeModal();
+  }
   if (current && active.has(current.h)) stopCopy(current.h);
   closeModal();
 });
@@ -1926,6 +1937,7 @@ document.addEventListener('click', e => {
   const ed = e.target.closest('[data-edit]'); if (ed) openModal(ed.dataset.edit);
 });
 $('#m-start').addEventListener('click', () => {
+  if (realTarget) return startRealCopy();
   const was = active.has(current.h), prev = active.get(current.h);
   const budget = Math.round((parseFloat($('#budget').value) || 0) * 100) / 100;
   const err = $('#budget-err');
@@ -1955,11 +1967,12 @@ $$('#wc-plat [data-v]').forEach(b => b.addEventListener('click', () => {
   $$('#wc-plat [data-v]').forEach(x => x.setAttribute('aria-pressed', x === b));
   const inp = $('#wc-addr');
   inp.disabled = false; $('#wc-go').disabled = false;
-  inp.placeholder = wc.plat === 'pump' ? 'Solana wallet, e.g. 7xKpQ…' : 'Wallet address or @username';
+  inp.placeholder = wc.plat === 'pump' ? 'Solana wallet, e.g. 7xKpQ…' : LIVE ? 'FOMO wallet address (from their FOMO profile)' : 'Wallet address or @username';
   $('#wc-err').hidden = true; inp.focus();
 }));
 $('#wc-addr').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wc-go').click(); });
 $('#wc-go').addEventListener('click', () => {
+  if (LIVE) return liveLookup();
   const raw = $('#wc-addr').value.trim(), err = $('#wc-err');
   if (!wc.plat) { err.textContent = 'Choose Pump.fun or FOMO first.'; err.hidden = false; return; }
   const isAddr = SOL_ADDR.test(raw), isUser = wc.plat === 'fomo' && !isAddr && FOMO_USER.test(raw);
@@ -2033,23 +2046,254 @@ function renderWallet() {
   if (start) start.addEventListener('click', () => { walletTrader(p); openModal(p.handle); });
 }
 
+/* ---------------- live copy trading (hosted site: the `copy` Edge Function) ---------------- */
+const live = { copies: [], positions: [], fills: [], loaded: false, seen: new Set(), profile: null, busy: false };
+let realTarget = null; // { address, platform } while the settings window edits a live copy
+const copyCall = (action, extra) => walletCall(action, extra, 'copy');
+const solTxt = lamports => fmtSol(Number(lamports || 0) / 1e9);
+const ago = t => { const s = Math.max(0, Date.now() / 1000 - t); return s < 90 ? Math.round(s) + 's' : s < 5400 ? Math.round(s / 60) + 'm' : s < 172800 ? Math.round(s / 3600) + 'h' : Math.round(s / 86400) + 'd'; };
+
+async function refreshLive() {
+  if (!LIVE || !session || live.busy) return;
+  live.busy = true;
+  const first = !live.loaded;
+  try {
+    const d = await copyCall('list');
+    Object.assign(live, { copies: d.copies || [], positions: d.positions || [], fills: d.fills || [], loaded: true, err: null });
+  } catch (e) { live.err = e.message; }
+  live.busy = false;
+  renderCopies(); renderLiveFills(first);
+  if (live.profile) renderLiveProfile();
+}
+setInterval(() => { if (LIVE && session && !document.hidden) refreshLive(); }, 15000);
+
+/* the copies list (Overview + Copy Engine) */
+function renderLiveCopies() {
+  const byCopy = id => live.positions.filter(p => p.copy_id === id);
+  const rows = live.copies.map(c => {
+    const pos = byCopy(c.id), open = pos.filter(p => p.status === 'open');
+    const inUse = open.reduce((n, p) => n + Number(p.cost_lamports || 0), 0);
+    const worth = open.reduce((n, p) => n + Number(p.value_lamports ?? p.cost_lamports ?? 0), 0);
+    const realized = pos.reduce((n, p) => n + Number(p.realized_lamports || 0), 0);
+    const pnl = worth - inUse + realized;
+    const size = c.size_mode === 'fixed' ? `${solTxt(c.fixed_lamports)} per trade` : `${c.prop_pct}% of their trade${c.cap_lamports ? ' (max ' + solTxt(c.cap_lamports) + ')' : ''}`;
+    const exits = [c.sl_pct && 'SL -' + c.sl_pct + '%', c.tp_pct && 'TP +' + c.tp_pct + '%'].filter(Boolean).join(' · ') || 'no auto exits';
+    return `<div class="cp">
+      <div class="av">${identicon(c.target)}</div>
+      <div style="min-width:0">
+        <div class="h">${esc(shortAddr(c.target))} <span class="tag ${c.active ? '' : 'n'}">${c.active ? 'live' : 'stopped'}</span> <span class="dim" style="font-size:12px;font-weight:400">${PLAT_NAME[c.platform] || c.platform}</span></div>
+        <div class="cfg">${solTxt(c.budget_lamports)} budget · ${size} · ${c.speed} · slip ${c.slippage_bps / 100}% · ${exits}</div>
+        ${open.length ? `<div class="cfg" style="color:var(--fg-2)">${open.map(p => `${coin(p.symbol || '?', 14)} ${solTxt(p.cost_lamports)} → ${solTxt(p.value_lamports ?? p.cost_lamports)}`).join(' · ')}</div>` : ''}
+      </div>
+      <div class="pl money ${pnl >= 0 ? 'gain' : 'loss'}">${pnl >= 0 ? '+' : ''}${solTxt(pnl)}<small>${open.length} open · ${solTxt(inUse)} in use</small></div>
+      <div class="acts">
+        <button class="btn" data-live-edit="${esc(c.target)}">${c.active ? 'Edit' : 'Resume'}</button>
+        ${c.active ? `<button class="btn ghost" data-live-stop="${esc(c.target)}">Stop</button>` : ''}
+        ${open.length ? `<button class="btn ghost" data-live-sell="${esc(c.target)}">Sell all</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  const empty = !session ? '<div class="empty">Sign in to copy trade.<button class="btn primary" id="auth-open">Sign in</button></div>'
+    : live.err && !live.loaded ? `<div class="empty"><span class="err">${esc(live.err)}</span></div>`
+    : '<div class="empty">No live copies yet. Paste a Pump.fun or FOMO wallet in <b>Copy any wallet</b> to start.<button class="btn primary" data-go="copy">Copy a wallet</button></div>';
+  $('#copies-mini').innerHTML = rows || empty;
+  $('#copies-full').innerHTML = rows || empty;
+  const n = live.copies.filter(c => c.active).length;
+  $('#s-copies').textContent = n; $('#nav-copies').textContent = n + ' on'; $('#j-cp').textContent = n + ' live';
+  $('#cp-count').textContent = n + (n === 1 ? ' wallet' : ' wallets');
+}
+document.addEventListener('click', async e => {
+  const ed = e.target.closest('[data-live-edit]');
+  if (ed) { const c = live.copies.find(x => x.target === ed.dataset.liveEdit); openRealCopy(ed.dataset.liveEdit, c ? c.platform : 'pump'); }
+  const st = e.target.closest('[data-live-stop]');
+  if (st) liveStop(st.dataset.liveStop);
+  const sl = e.target.closest('[data-live-sell]');
+  if (sl) {
+    // two taps: selling everything can't be undone
+    if (!sl.dataset.armed) { sl.dataset.armed = '1'; sl.textContent = 'Tap again to sell all'; setTimeout(() => { delete sl.dataset.armed; sl.textContent = 'Sell all'; }, 4000); return; }
+    sl.disabled = true; sl.textContent = 'Selling…';
+    try { const d = await copyCall('sellall', { target: sl.dataset.liveSell }); toast(`Sold ${d.sold} position${d.sold === 1 ? '' : 's'}`); }
+    catch (x) { toast(x.message); }
+    refreshLive();
+  }
+});
+async function liveStop(target) {
+  try { await copyCall('stop', { target }); toast('Stopped copying ' + shortAddr(target) + '. Open positions keep their stop-loss / take-profit.'); }
+  catch (x) { toast(x.message); }
+  refreshLive();
+}
+
+/* the Terminal: your real copy trades */
+function renderLiveFills(first) {
+  const fresh = live.fills.filter(f => !live.seen.has(f.id)).reverse(); // oldest first, so the newest ends on top
+  for (const f of fresh) {
+    live.seen.add(f.id);
+    const c = live.copies.find(x => x.id === f.copy_id);
+    const who = c ? shortAddr(c.target) : 'copy';
+    const st = f.status === 'sent' ? f.side.toUpperCase() : f.status === 'skipped' ? 'SKIPPED' : 'FAILED';
+    const what = f.side === 'buy'
+      ? `BUY ${f.lamports ? solTxt(f.lamports) + ' → ' : ''}${coin(f.symbol || '?', 14)}`
+      : `SELL ${coin(f.symbol || '?', 14)}${f.lamports ? ' → ' + solTxt(f.lamports) : ''}`;
+    addLine({
+      cls: f.status === 'sent' ? 'ok' : f.status === 'skipped' ? 'block' : 'fail', st,
+      msg: `<b>${esc(who)}</b> ${what}${f.reason ? ' · ' + esc(f.reason) : ''}`,
+      lat: new Date(f.created_at).toLocaleTimeString('en-US', { hour12: false }),
+      hash: f.signature ? f.signature.slice(0, 6) + '…' + f.signature.slice(-4) : '',
+      href: f.signature ? 'https://solscan.io/tx/' + f.signature : '',
+    });
+    if (!first && f.status === 'sent') toast(`${st} ${f.symbol || ''} copied from ${who}`);
+  }
+}
+
+/* looking up a wallet: real portfolio and recent trades */
+async function liveLookup() {
+  const raw = $('#wc-addr').value.trim(), err = $('#wc-err');
+  if (!wc.plat) { err.textContent = 'Choose Pump.fun or FOMO first.'; err.hidden = false; return; }
+  if (!SOL_ADDR_RE.test(raw)) { err.textContent = 'That doesn\'t look like a Solana wallet. It should be 32–44 letters and numbers, with no 0, O, I or l.'; err.hidden = false; return; }
+  if (!requireAuth(liveLookup, 'Sign in to look up wallets')) return;
+  err.hidden = true;
+  $('#wc-profile').innerHTML = `<div class="thinking"><span class="dot pulse"></span>Reading this wallet's ${PLAT_NAME[wc.plat]} trades and portfolio…</div>`;
+  try {
+    live.profile = Object.assign(await copyCall('profile', { address: raw, platform: wc.plat }), { platform: wc.plat });
+    renderLiveProfile();
+  } catch (x) { live.profile = null; $('#wc-profile').innerHTML = `<div class="err">${esc(x.message)}</div>`; }
+}
+function renderLiveProfile() {
+  const p = live.profile; if (!p) return;
+  const c = live.copies.find(x => x.target === p.address && x.active);
+  const s = p.stats || {};
+  const pl = v => v == null ? '—' : `<span class="${v >= 0 ? 'gain' : 'loss'}">${v >= 0 ? '+' : ''}${fmtSol(v)}</span>`;
+  const img = h => h.image && /^https:\/\//.test(h.image) ? `<img src="${esc(h.image)}" alt="" width="18" height="18" style="border-radius:50%;object-fit:cover;vertical-align:middle" referrerpolicy="no-referrer"> ` : '';
+  const quiet = p.platform === 'pump' && !s.pumpTrades;
+  $('#wc-profile').innerHTML = `
+    <div class="prof-head">
+      <div class="av">${identicon(p.address)}</div>
+      <div style="min-width:0;display:grid;gap:2px">
+        <span class="nm">${esc(shortAddr(p.address))} <span class="lg-tag">${PLAT_NAME[p.platform]}</span></span>
+        <a class="pm-link mono" style="font-size:11.5px;overflow-wrap:anywhere" href="https://solscan.io/account/${esc(p.address)}" target="_blank" rel="noopener">${esc(p.address)} ↗</a>
+      </div>
+      <span class="spacer"></span>
+      ${c ? `<span class="copying"><span class="dot pulse"></span>Copying live</span><button class="btn" data-live-edit="${esc(p.address)}">Edit settings</button><button class="btn" data-live-stop="${esc(p.address)}">Stop copying</button>`
+          : `<button class="btn primary lg" id="wc-live-start">Set up live copying</button>`}
+    </div>
+    ${quiet ? '<div class="err" style="color:var(--fg-2)">No Pump.fun trades in this wallet\'s recent history. A Pump.fun copy only acts when they trade on Pump.fun.</div>' : ''}
+    <div class="prof-stats">
+      <div class="stat"><span class="k">SOL balance</span><span class="v mono">${fmtSol(p.solBalance)}</span></div>
+      <div class="stat"><span class="k">Portfolio</span><span class="v">${usd(p.portfolioUsd || 0, 0)}</span></div>
+      <div class="stat"><span class="k">Recent trades</span><span class="v">${s.trades ?? 0}</span></div>
+      <div class="stat"><span class="k">Closed trades</span><span class="v">${s.roundTrips ?? 0}</span></div>
+      <div class="stat"><span class="k">Realized P&amp;L</span><span class="v mono">${pl(s.realizedSol)}</span></div>
+      <div class="stat"><span class="k">Win rate</span><span class="v">${s.winRate == null ? '—' : s.winRate + '%'}</span></div>
+    </div>
+    <div class="prof-cols">
+      <div class="plist"><h4>Top holdings</h4>${(p.holdings || []).length ? p.holdings.map(h => `<div class="prow"><span>${img(h)}${esc(h.symbol)}</span><span class="r">${usd(h.usd || 0, 0)}</span><span class="r dim">${Number(h.amount).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>`).join('') : '<div class="prow"><span class="dim">No tokens held</span></div>'}</div>
+      <div class="plist"><h4>Recent trades</h4>${(p.recent || []).length ? p.recent.map(t => `<div class="prow"><span><span class="${t.side === 'buy' ? 'gain' : 'loss'} mono" style="font-size:11px">${t.side.toUpperCase()}</span> ${coin(t.symbol || '?', 16)} <span class="dim">· ${fmtSol(t.sol)}</span></span><span class="r dim">${t.time ? ago(t.time) + ' ago' : ''}</span><a class="pm-link r" href="https://solscan.io/tx/${esc(t.signature)}" target="_blank" rel="noopener">tx ↗</a></div>`).join('') : '<div class="prow"><span class="dim">No recent token trades</span></div>'}</div>
+    </div>
+    <p class="note" style="margin:0">Stats cover this wallet's last 100 transactions. Past results don't predict future trades.</p>`;
+  const start = $('#wc-live-start');
+  if (start) start.addEventListener('click', () => openRealCopy(p.address, p.platform));
+}
+
+/* the settings window in live mode */
+function setSeg(id, v) { $$(`#${id} [data-v]`).forEach(x => x.setAttribute('aria-pressed', x.dataset.v === String(v))); }
+function setModalMode(real) {
+  $('#b-title').textContent = real ? 'Budget' : 'Practice budget';
+  $('#b-sub').textContent = real ? 'Most SOL this copy can have in open trades at once' : 'Simulated money for this copy';
+  $('#b-suf').textContent = real ? 'SOL' : '$';
+  const note = $('#b-note');
+  note.textContent = real ? 'Trades use real SOL from your Kopex wallet, placed automatically when this wallet trades. Memecoins are extremely risky: you can lose everything you put in.'
+    : 'Copy trading is in practice mode: trades are simulated and never use the SOL in your wallet.';
+  note.style.color = real ? 'var(--risk)' : '';
+  const amts = real ? [['0.25', '0.25 SOL'], ['0.5', '0.5 SOL'], ['1', '1 SOL']] : [['100', '$100'], ['500', '$500'], ['1000', '$1,000']];
+  $$('[data-ba]').forEach((b, i) => { b.dataset.ba = amts[i][0]; b.textContent = amts[i][1]; });
+  ['g-lp', 'g-sim', 'g-dev'].forEach(id => {
+    const i = $('#' + id); i.disabled = real; if (real) i.checked = false;
+    i.closest('label').classList.toggle('disabled', real);
+    i.closest('label').querySelector('.g-soon').hidden = !real;
+  });
+  $('#m-err').hidden = true;
+}
+async function openRealCopy(address, platform) {
+  if (!requireAuth(() => openRealCopy(address, platform), 'Sign in to copy trade')) return;
+  lastFocus = document.activeElement;
+  realTarget = { address, platform }; current = null;
+  const c = live.copies.find(x => x.target === address);
+  setModalMode(true);
+  $('#m-av').innerHTML = identicon(address);
+  $('#m-title').textContent = `Copy ${shortAddr(address)}`;
+  $('#m-sub').textContent = `${PLAT_NAME[platform] || platform} · live trades with your SOL`;
+  // existing settings, or careful defaults for a new copy
+  const d = c ? {
+    budget: c.budget_lamports / 1e9, mode: c.size_mode, fixed: (c.fixed_lamports || 5e7) / 1e9, pct: c.prop_pct || 10, cap: (c.cap_lamports || 1e8) / 1e9,
+    slip: c.slippage_bps / 100, speed: c.speed, sl: c.sl_pct, tp: c.tp_pct, g: c.guards || {},
+  } : { budget: 0.5, mode: 'fixed', fixed: 0.05, pct: 10, cap: 0.1, slip: 5, speed: 'turbo', sl: 30, tp: 100, g: { mint: true, freeze: true, top10: false, minLiq: 0 } };
+  $('#budget').value = d.budget;
+  cfg.alloc = d.mode === 'prop' ? 'prop' : 'fixed'; setSeg('alloc', cfg.alloc);
+  $('#alloc-fixed').hidden = cfg.alloc !== 'fixed'; $('#alloc-prop').hidden = cfg.alloc !== 'prop';
+  $('#fixed-amt').value = d.fixed; $('#prop-pct').value = d.pct; $('#prop-out').textContent = d.pct + '%'; $('#prop-cap').value = d.cap;
+  cfg.fee = d.speed; setSeg('fee', d.speed);
+  cfg.slip = d.slip; const preset = $$('#slip [data-v]').some(x => +x.dataset.v === d.slip);
+  setSeg('slip', preset ? d.slip : 'none'); $('#slip-custom').value = preset ? '' : d.slip;
+  $('#sl-on').checked = d.sl != null; $('#sl').disabled = d.sl == null; $('#sl').value = d.sl ?? 30;
+  $('#tp-on').checked = d.tp != null; $('#tp').disabled = d.tp == null; $('#tp').value = d.tp ?? 100;
+  $('#g-mint').checked = !!d.g.mint; $('#g-freeze').checked = !!d.g.freeze; $('#g-top').checked = !!d.g.top10; $('#g-liq').value = d.g.minLiq ?? 0;
+  $('#m-start').textContent = c && c.active ? 'Save changes' : 'Start live copying';
+  $('#m-cancel').textContent = c && c.active ? 'Stop copying' : 'Cancel';
+  $$('.scrim').forEach(x => { if (x.id !== 'scrim') x.hidden = true; });
+  $('#scrim').hidden = false; summary();
+  setTimeout(() => $('#m-close').focus(), 30);
+}
+async function startRealCopy() {
+  const b = $('#m-start'), err = $('#m-err');
+  const settings = {
+    budgetSol: parseFloat($('#budget').value), sizeMode: cfg.alloc === 'prop' ? 'prop' : 'fixed',
+    fixedSol: parseFloat($('#fixed-amt').value), propPct: parseFloat($('#prop-pct').value), capSol: parseFloat($('#prop-cap').value),
+    slippagePct: cfg.slip, speed: cfg.fee,
+    slPct: $('#sl-on').checked ? parseFloat($('#sl').value) : null, tpPct: $('#tp-on').checked ? parseFloat($('#tp').value) : null,
+    guards: { mint: $('#g-mint').checked, freeze: $('#g-freeze').checked, top10: $('#g-top').checked, minLiq: parseFloat($('#g-liq').value) || 0 },
+  };
+  if (!(settings.budgetSol >= 0.01)) { err.textContent = 'Set a budget of at least 0.01 SOL.'; err.hidden = false; return; }
+  b.disabled = true; const label = b.textContent; b.textContent = 'Starting…'; err.hidden = true;
+  try {
+    await walletCall('get'); // makes sure the user's Kopex wallet exists
+    const { address, platform } = realTarget;
+    await copyCall('start', { target: address, platform, settings });
+    toast(label === 'Save changes' ? 'Saved' : `Live copying ${shortAddr(address)}`);
+    addLine({ cls: 'ok', st: 'ARMED', msg: `<b>${esc(shortAddr(address))}</b> live copy ${label === 'Save changes' ? 'updated' : 'started'} · ${settings.sizeMode === 'fixed' ? settings.fixedSol + ' SOL per trade' : settings.propPct + '% of their trades'}`, lat: '—' });
+    closeModal(); refreshLive();
+  } catch (x) { err.textContent = x.message; err.hidden = false; }
+  b.disabled = false; b.textContent = label;
+}
+
+/* the hosted site copies real wallets; leaderboard traders are examples there */
+if (LIVE) {
+  $('#copy-mode-note').textContent = 'Live: copies place real trades with SOL from your Kopex wallet, using your budget, stop-loss / take-profit and safety checks. Leaderboard traders are examples only.';
+  $('#vault-copy').textContent = 'Live copies sign with your wallet key on the server, only for wallets you choose to copy';
+  $('#vault-copy-tag').textContent = 'on'; $('#vault-copy-tag').className = 'tag';
+  const lbHead = $('[data-view="leaderboard"] .panel-h h2');
+  if (lbHead) lbHead.insertAdjacentHTML('afterend', '<span class="tag n">Example traders · simulated</span>');
+  const tp = $('.phead[data-view="terminal"] p');
+  if (tp) tp.textContent = 'Your live copy trades: every buy and sell placed for you, plus trades your safety checks skipped. Links open the transaction on Solscan.';
+  $('#log').innerHTML = '';
+}
+
 /* ---------------- SOL wallet: deposit / withdraw (Supabase Edge Function "wallet") ---------------- */
 const dep = { mode: 'dep', step: 'form', to: '', sol: '', result: null, busy: false };
-async function walletCall(action, extra) {
+async function walletCall(action, extra, fn) {
   const { data } = await sb.auth.getSession();
   const s = data && data.session;
   if (!s) throw new Error('Sign in again.');
   let r;
   try {
-    r = await fetch(CFG.supabaseUrl + '/functions/v1/wallet', {
+    r = await fetch(CFG.supabaseUrl + '/functions/v1/' + (fn || 'wallet'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token, apikey: CFG.supabaseAnonKey },
       body: JSON.stringify(Object.assign({ action }, extra || {})),
     });
-  } catch (e) { throw new Error('Kopex couldn\'t reach the wallet service. Check your connection.'); }
+  } catch (e) { throw new Error('Kopex couldn\'t reach its server. Check your connection.'); }
   const d = await r.json().catch(() => ({}));
-  if (r.status === 404 && !d.error) throw new Error('The wallet service isn\'t set up yet.');
-  if (!r.ok || d.error) throw new Error(d.error || `Wallet service error (${r.status}).`);
+  if (r.status === 404 && !d.error) throw new Error('This Kopex service isn\'t set up yet.');
+  if (!r.ok || d.error) throw new Error(d.error || `Kopex server error (${r.status}).`);
   return d;
 }
 async function refreshWallet(quiet) {
@@ -2072,6 +2316,7 @@ function onWalletAuth() {
   if (!session) Object.assign(wallet, { address: null, sol: null, cluster: null, err: null, activity: null });
   renderFunds();
   if (session) refreshWallet();
+  if (LIVE) { if (!session) Object.assign(live, { copies: [], positions: [], fills: [], loaded: false }); session ? refreshLive() : renderCopies(); }
 }
 // watch for incoming deposits: every 15s while the wallet window is open, every 60s otherwise
 setInterval(() => { if (session && LIVE && !document.hidden && $('#dep-scrim').hidden) refreshWallet(true); }, 60000);
@@ -2205,6 +2450,7 @@ function addLine(o) {
   return el;
 }
 function genEvent() {
+  if (LIVE) return; // the hosted site shows only real copy trades
   const copying = [...active]; const tr = pick(copying.length ? TR.filter(t => active.has(t.h)).concat(TR.slice(0, 4)) : TR);
   const roll = Math.random();
   let msg, href, hash, latR, venue = tr.v;
