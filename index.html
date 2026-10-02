@@ -1352,9 +1352,11 @@ if (LIVE) {
   setTimeout(async () => {
     // Supabase puts sign-in problems in the address; show them instead of failing silently
     const q = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
-    const why = q.get('error_description');
+    let why = q.get('error_description');
     if (why) {
+      try { why = decodeURIComponent(why.replace(/\+/g, ' ')); } catch (e) {}
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      if (/exchange external code/i.test(why)) why = 'Google couldn\'t confirm the sign-in. Try again, or sign in with email.';
       openAuth(); authErr('Sign-in didn\'t finish: ' + why);
       return;
     }
