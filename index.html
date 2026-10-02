@@ -313,6 +313,8 @@ a { color: inherit; }
 .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; font-size: 13px; }
 .kv dt { color: var(--dim); }
 .kv dd { margin: 0; color: var(--fg-2); overflow-wrap: anywhere; }
+.locked { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 34px; padding: 0 10px; border-radius: 8px; border: var(--hair) dashed #3f3f46; background: rgba(9,9,11,.35); color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.locked svg { flex: none; color: var(--dim); }
 .linkish { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: 12.5px; }
 .linkish:hover { color: var(--fg); }
 
@@ -1101,7 +1103,7 @@ function deviceName() {
 const demoAccounts = () => store.get('kopex.accounts') || {};
 function pfpHtml(user, size) {
   const s = size || 24, init = esc((user.username || '?').slice(0, 2).toUpperCase());
-  return `<span class="pfp" style="width:${s}px;height:${s}px;font-size:${Math.round(s * 0.38)}px">${user.pfp ? `<img src="${esc(user.pfp)}" alt="">` : init}</span>`;
+  return `<span class="pfp" style="width:${s}px;height:${s}px;font-size:${Math.round(s * 0.38)}px">${user.pfp ? `<img src="${esc(user.pfp)}" alt="" referrerpolicy="no-referrer">` : init}</span>`;
 }
 function renderAcct() {
   $('#acct-slot').innerHTML = session
@@ -1118,7 +1120,7 @@ function requireAuth(fn, why) {
   pendingAction = fn; openAuth(why); return false;
 }
 function openAuth(why) {
-  Object.assign(auth, { step: 'start', contact: '', method: '', code: '', pfp: null, why: why || '', busy: false });
+  Object.assign(auth, { step: 'start', contact: '', method: '', code: '', pfp: null, suggest: '', why: why || '', busy: false });
   $$('.scrim').forEach(s => { if (s.id !== 'auth-scrim') s.hidden = true; });
   $('#auth-scrim').hidden = false; renderAuth();
 }
@@ -1129,6 +1131,7 @@ const ICON = {
   google: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12h8"/></svg>',
   discord: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 6.5C7 5 9 4.6 12 4.6s5 .4 7 1.9c1.5 3 2 6.3 1.6 10-1.7 1.3-3.4 2-5 2.3l-1-1.8M5 6.5C3.5 9.5 3 12.8 3.4 16.5c1.7 1.3 3.4 2 5 2.3l1-1.8"/><circle cx="9" cy="12.5" r="1"/><circle cx="15" cy="12.5" r="1"/></svg>',
 };
+const LOCK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-label="Locked"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function renderAuth() {
   const body = $('#a-body'), a = auth;
   $('#a-sub').textContent = a.why;
@@ -1171,8 +1174,10 @@ function renderAuth() {
     setTimeout(() => $('#a-code').focus(), 30);
   } else if (a.step === 'profile') {
     $('#a-title').textContent = 'Set up your profile';
-    const suggested = a.kind === 'email' && a.contact.includes('@') ? a.contact.split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 16) : '';
+    const fromEmail = a.kind === 'email' && a.contact.includes('@') ? a.contact.split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 16) : '';
+    const suggested = (a.suggest && a.suggest.length >= 3 ? a.suggest : '') || fromEmail;
     body.innerHTML = `<div class="sec">
+      ${a.contact ? `<div class="field"><span class="lbl">Linked ${a.method === 'phone' ? 'phone number' : 'email'}</span><div class="locked">${esc(a.contact)}${LOCK}</div></div>` : ''}
       <div class="pfp-edit">
         <span id="a-pfp">${pfpHtml({ username: suggested || '?', pfp: a.pfp }, 64)}</span>
         <div style="display:grid;gap:6px"><button class="btn" data-pfp-pick>Upload photo</button>${a.pfp ? '<button class="linkish" id="a-pfp-rm">Remove</button>' : ''}</div>
@@ -1312,6 +1317,10 @@ async function syncLive(u, fromSignIn) {
     // signed in but no profile yet: finish sign-up
     authUser = u; auth.method = methodOf(u); auth.kind = auth.method === 'phone' ? 'phone' : 'email';
     auth.contact = u.email || u.phone || ''; auth.step = 'profile';
+    // Google / Discord share a name and photo: start from those, the user can change both
+    const md = u.user_metadata || {};
+    auth.suggest = String(md.full_name || md.name || md.user_name || '').replace(/[^A-Za-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 20);
+    if (!auth.pfp && /^https:\/\//.test(md.avatar_url || md.picture || '')) auth.pfp = md.avatar_url || md.picture;
     $('#auth-scrim').hidden = false; renderAuth(); return;
   }
   const wasOut = !session;
@@ -1355,7 +1364,8 @@ async function createAccount() {
   }
   busy('#a-create', true, 'Creating…');
   try {
-    const avatar = auth.pfp ? await uploadAvatar(authUser.id, auth.pfp) : null;
+    // an uploaded photo goes to storage; a Google / Discord photo is already a web address
+    const avatar = !auth.pfp ? null : auth.pfp.startsWith('data:') ? await uploadAvatar(authUser.id, auth.pfp) : auth.pfp;
     const { error } = await sb.from('profiles').insert({ id: authUser.id, username: name, avatar_url: avatar });
     if (error) {
       busy('#a-create', false, 'Create account');
@@ -1451,8 +1461,12 @@ function renderAccount() {
       </div>
     </div>
     <div class="sec">
+      <div class="field"><span class="lbl">Linked ${u.method === 'phone' ? 'phone number' : 'email'}</span>
+        <div class="locked">${esc(u.contact || maskContact(u))}${LOCK}</div>
+        <span class="note">Your account is tied to this ${u.method === 'phone' ? 'number' : 'email'}, so it can't be changed. Your username and photo can.</span>
+      </div>
       <dl class="kv" style="margin:0">
-        <dt>Signed in with</dt><dd>${esc(via)} · ${esc(maskContact(u))}</dd>
+        <dt>Signed in with</dt><dd>${esc(via)}</dd>
         <dt>This device</dt><dd>${esc(session.device)}</dd>
         <dt>Signed in since</dt><dd>${since}</dd>
         <dt>Stay signed in</dt><dd>${session.remember ? 'Yes, on this device' : 'Until you close the browser'}</dd>
