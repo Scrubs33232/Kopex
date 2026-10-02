@@ -1091,7 +1091,7 @@ try {
 } catch (e) { sb = null; }
 const LIVE = !!sb;
 let session = LIVE ? null : (store.get('kopex.session') || store.get('kopex.session', 'session'));
-let pendingAction = null, authUser = null;
+let pendingAction = null, authUser = null, needsProfile = null; // needsProfile: signed in with Supabase, no Kopex profile yet
 const auth = { step: 'start', kind: 'email', contact: '', method: '', code: '', pfp: null, why: '', busy: false };
 
 function deviceName() {
@@ -1108,7 +1108,9 @@ function pfpHtml(user, size) {
 function renderAcct() {
   $('#acct-slot').innerHTML = session
     ? `<button class="acct" id="acct-open" aria-label="Your account">${pfpHtml(session.user, 22)}<span>@${esc(session.user.username)}</span></button>`
-    : `<button class="btn primary" id="auth-open" style="height:28px;border-radius:999px">Sign in</button>`;
+    : needsProfile
+      ? `<button class="btn primary" id="auth-open" style="height:28px;border-radius:999px">Finish sign-up</button>`
+      : `<button class="btn primary" id="auth-open" style="height:28px;border-radius:999px">Sign in</button>`;
 }
 document.addEventListener('click', e => {
   if (e.target.closest('#auth-open')) openAuth();
@@ -1120,6 +1122,7 @@ function requireAuth(fn, why) {
   pendingAction = fn; openAuth(why); return false;
 }
 function openAuth(why) {
+  if (LIVE && needsProfile) { auth.why = why || ''; $$('.scrim').forEach(s => { if (s.id !== 'auth-scrim') s.hidden = true; }); syncLive(needsProfile, false); return; }
   Object.assign(auth, { step: 'start', contact: '', method: '', code: '', pfp: null, suggest: '', why: why || '', busy: false });
   $$('.scrim').forEach(s => { if (s.id !== 'auth-scrim') s.hidden = true; });
   $('#auth-scrim').hidden = false; renderAuth();
@@ -1310,10 +1313,12 @@ async function loadProfile(id) {
   return data;
 }
 async function syncLive(u, fromSignIn) {
-  if (!u) { session = null; renderAcct(); afterAuthChange(); return; }
+  if (!u) { session = null; needsProfile = null; renderAcct(); afterAuthChange(); return; }
   let prof = null;
-  try { prof = await loadProfile(u.id); } catch (e) { toast('Couldn\'t load your profile. Check your connection.'); return; }
+  try { prof = await loadProfile(u.id); }
+  catch (e) { needsProfile = u; renderAcct(); toast('Couldn\'t load your profile: ' + friendly(e) + ' Tap Finish sign-up to retry.'); return; }
   if (!prof) {
+    needsProfile = u; renderAcct();
     // signed in but no profile yet: finish sign-up
     authUser = u; auth.method = methodOf(u); auth.kind = auth.method === 'phone' ? 'phone' : 'email';
     auth.contact = u.email || u.phone || ''; auth.step = 'profile';
@@ -1324,6 +1329,7 @@ async function syncLive(u, fromSignIn) {
     $('#auth-scrim').hidden = false; renderAuth(); return;
   }
   const wasOut = !session;
+  needsProfile = null;
   session = {
     user: { id: u.id, username: prof.username, pfp: prof.avatar_url || null, method: methodOf(u), contact: u.email || (u.phone ? '+' + String(u.phone).replace(/^\+/, '') : '') },
     device: store.get('kopex.device') || deviceName(), since: store.get('kopex.since') || Date.now(), remember: rememberMe(),
@@ -1341,8 +1347,20 @@ if (LIVE) {
   // Supabase recommends not awaiting its own calls inside this callback, so hand off on the next tick
   sb.auth.onAuthStateChange((evt, s) => {
     if (evt === 'INITIAL_SESSION' || evt === 'SIGNED_OUT') setTimeout(() => syncLive(s && s.user, false), 0);
-    if (evt === 'SIGNED_IN' && !session && $('#auth-scrim').hidden) setTimeout(() => syncLive(s && s.user, false), 0); // back from Google / Discord
+    if (evt === 'SIGNED_IN' && !session && !auth.busy) setTimeout(() => syncLive(s && s.user, false), 0); // back from Google / Discord
   });
+  setTimeout(async () => {
+    // Supabase puts sign-in problems in the address; show them instead of failing silently
+    const q = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+    const why = q.get('error_description');
+    if (why) {
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      openAuth(); authErr('Sign-in didn\'t finish: ' + why);
+      return;
+    }
+    // double-check in case the first sign-in event was missed
+    try { const { data } = await sb.auth.getSession(); if (data.session && !session && !needsProfile) syncLive(data.session.user, false); } catch (e) {}
+  }, 1500);
 }
 async function uploadAvatar(uid, dataUrl) {
   const blob = await (await fetch(dataUrl)).blob(), path = `${uid}/avatar.jpg`;
