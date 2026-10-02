@@ -170,6 +170,7 @@ a { color: inherit; }
 .phead { display: flex; align-items: flex-end; gap: 12px 20px; flex-wrap: wrap; }
 .phead h1 { margin: 0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; }
 .phead p { margin: 4px 0 0; color: var(--muted); max-width: 64ch; }
+.phead p.practice { margin-top: 8px; color: var(--fg-2); font-size: 13px; padding: 8px 12px; border: var(--hair) dashed rgba(16,185,129,.45); border-radius: 8px; background: var(--gain-bg); }
 .jump { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 1180px) { .jump { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .jump { grid-template-columns: minmax(0, 1fr); } }
@@ -584,7 +585,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
       <span>Kopex</span><small>COPY &amp; PREDICT</small>
     </div>
     <div class="status">
-      <span class="bal-chip">Balance <b class="money" id="bal">$1,250.00</b><button class="btn primary" data-deposit>Deposit</button></span>
+      <span class="bal-chip">Balance <b class="money mono" id="bal">—</b><button class="btn primary" data-deposit>Deposit</button></span>
       <span class="chip" title="Solana RPC round-trip latency"><span class="dot pulse" id="rpc-dot"></span>RPC <b id="rpc">38ms</b></span>
       <span class="chip" title="Jito block engine connection"><span class="dot pulse"></span>Jito MEV <b>active</b></span>
       <span class="chip" title="Current Solana slot">Slot <b id="slot">—</b></span>
@@ -633,8 +634,8 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
   </div>
   <section class="panel quick" data-view="overview">
     <div style="display:grid;gap:2px">
-      <span class="eyebrow">Available to trade</span>
-      <span class="big money" id="q-bal">$1,250.00</span>
+      <span class="eyebrow">Your SOL wallet</span>
+      <span class="big money mono" id="q-bal">—</span>
       <span class="note" id="q-alloc"></span>
     </div>
     <div class="acts">
@@ -655,7 +656,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
     <section class="panel">
       <div class="eq-head">
         <div style="display:grid;gap:6px">
-          <span class="eyebrow">Portfolio equity</span>
+          <span class="eyebrow">Practice portfolio · simulated</span>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <span class="eq-val money" id="eq-val">$48,213.62</span>
             <span class="delta up" id="eq-delta">+2.84%</span>
@@ -721,7 +722,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
 
   <!-- ================= COPY ENGINE ================= -->
   <div class="phead" data-view="copy">
-    <div><h1>Copy Engine</h1><p>Copy any Pump.fun or FOMO wallet, or a trader from the leaderboard. Each copy runs on its own budget, stop-loss / take-profit and safety checks, and you can stop it any time.</p></div>
+    <div><h1>Copy Engine</h1><p>Copy any Pump.fun or FOMO wallet, or a trader from the leaderboard. Each copy runs on its own budget, stop-loss / take-profit and safety checks, and you can stop it any time.</p><p class="practice">Practice mode: copy trades are simulated and never use the SOL in your wallet. Live copy trading isn't available yet.</p></div>
     <span class="spacer"></span>
     <button class="btn" data-go="leaderboard">Browse leaderboard</button>
   </div>
@@ -840,11 +841,10 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
       <div>
         <h3>Encryption</h3>
         <div class="enc">
-          <div class="enc-row"><span class="dot"></span><div><div class="k">Secrets at rest</div><div class="s">AES-256-GCM · 96-bit nonce</div></div><span class="tag">active</span></div>
-          <div class="enc-row"><span class="dot"></span><div><div class="k">Envelope keys</div><div class="s">AWS KMS · us-east-1 · key/7c1e…a94d</div></div><span class="tag n">rotates 23d</span></div>
-          <div class="enc-row"><span class="dot"></span><div><div class="k">Trade signer</div><div class="s">Isolated enclave · keys never exported</div></div><span class="tag">active</span></div>
-          <div class="enc-row"><span class="dot"></span><div><div class="k">Withdrawals via API</div><div class="s">Blocked for every key scope</div></div><span class="tag n">locked</span></div>
-          <div class="enc-row"><span class="dot pulse"></span><div><div class="k">Integrity check</div><div class="s" id="integrity">last run 4s ago</div></div><span class="tag">pass</span></div>
+          <div class="enc-row"><span class="dot"></span><div><div class="k">Wallet keys</div><div class="s">AES-256-GCM, one key per account, bound to your user ID</div></div><span class="tag">on</span></div>
+          <div class="enc-row"><span class="dot"></span><div><div class="k">Master key</div><div class="s">Server secret in Supabase · never sent to any browser</div></div><span class="tag">on</span></div>
+          <div class="enc-row"><span class="dot"></span><div><div class="k">Withdrawals</div><div class="s">Signed on the server · daily limit per account</div></div><span class="tag">on</span></div>
+          <div class="enc-row"><span class="dot"></span><div><div class="k">Copy trading</div><div class="s">Practice mode · never touches your SOL</div></div><span class="tag n">practice</span></div>
         </div>
       </div>
 
@@ -871,7 +871,7 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
       </div>
 
       <div>
-        <div style="display:flex;align-items:center;gap:10px"><h3>Wallets</h3><span class="spacer"></span><button class="btn" id="add-wallet">+ Add wallet</button></div>
+        <div style="display:flex;align-items:center;gap:10px"><h3>Your deposit wallet</h3><span class="spacer"></span><button class="btn" data-deposit>Deposit / withdraw</button></div>
         <div class="wallets" id="wallets"></div>
       </div>
     </div>
@@ -895,14 +895,14 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
     </div>
     <div class="m-body">
       <div class="sec">
-        <div class="sec-h"><h3>Budget</h3><p>Money set aside from your balance for this trader</p></div>
+        <div class="sec-h"><h3>Practice budget</h3><p>Simulated money for this copy</p></div>
         <div class="pills">
-          <div class="inp-suf" style="width:160px"><input class="inp" id="budget" type="number" min="10" step="10" value="500" aria-label="Budget for this copy"><span>$</span></div>
-          <button class="pill" data-bp="0.25">25%</button>
-          <button class="pill" data-bp="0.5">50%</button>
-          <button class="pill" data-bp="1">Max</button>
+          <div class="inp-suf" style="width:160px"><input class="inp" id="budget" type="number" min="10" step="10" value="500" aria-label="Practice budget for this copy"><span>$</span></div>
+          <button class="pill" data-ba="100">$100</button>
+          <button class="pill" data-ba="500">$500</button>
+          <button class="pill" data-ba="1000">$1,000</button>
         </div>
-        <span class="note" id="budget-avail"></span>
+        <span class="note">Copy trading is in practice mode: trades are simulated and never use the SOL in your wallet.</span>
         <div class="err" id="budget-err" hidden></div>
       </div>
       <div class="sec">
@@ -982,12 +982,13 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
   </div>
 </div>
 
-<!-- deposit / withdraw modal -->
+<!-- deposit / withdraw SOL -->
 <div class="scrim" id="dep-scrim" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="d-title" style="width:min(480px,100%)">
     <div class="m-head">
-      <h2 id="d-title">Add funds</h2>
+      <div style="display:grid;gap:2px;min-width:0"><h2 id="d-title">Your SOL wallet</h2><span class="dim mono" style="font-size:12px" id="d-bal">—</span></div>
       <span class="spacer"></span>
+      <button class="icon-btn" id="d-refresh" aria-label="Refresh balance" title="Refresh balance"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
       <button class="icon-btn" id="d-close" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg></button>
     </div>
     <div class="m-body">
@@ -996,32 +997,12 @@ td .roi { padding: 2px 4px; border-radius: 4px; }
           <button data-v="dep" aria-pressed="true">Deposit</button>
           <button data-v="wd" aria-pressed="false">Withdraw</button>
         </div>
-        <div class="opts two" id="d-asset">
-          <button class="opt" data-v="USDC" aria-pressed="true"><b>USDC</b><small>Solana SPL</small></button>
-          <button class="opt" data-v="SOL" aria-pressed="false"><b>SOL</b><small>≈ $153.70</small></button>
-        </div>
-        <div class="field">
-          <label for="d-amt">Amount in USD</label>
-          <div class="inp-suf"><input class="inp" id="d-amt" type="number" min="1" step="1" value="500"><span>$</span></div>
-        </div>
-        <div class="pills" id="d-quick">
-          <button class="pill" data-a="100">$100</button>
-          <button class="pill" data-a="500">$500</button>
-          <button class="pill" data-a="1000">$1,000</button>
-          <button class="pill" data-a="5000">$5,000</button>
-        </div>
-        <span class="note" id="d-conv"></span>
-        <div class="err" id="d-err" hidden></div>
       </div>
-      <div class="sec">
-        <p class="note" style="margin:0">Demo mode: this adds or removes simulated funds. No real money moves and no wallet is charged.</p>
+      <div id="d-pane"></div>
+      <div class="sec" id="d-activity-sec">
+        <div class="sec-h"><h3>Recent activity</h3></div>
+        <div id="d-activity" class="note">—</div>
       </div>
-    </div>
-    <div class="m-foot">
-      <div class="summary" id="d-sum"></div>
-      <span class="spacer"></span>
-      <button class="btn ghost" id="d-cancel">Cancel</button>
-      <button class="btn primary" id="d-go">Add funds</button>
     </div>
   </div>
 </div>
@@ -1546,7 +1527,7 @@ $('#ac-body').addEventListener('click', async e => {
   }
 });
 // hook for parts of the page that show per-user data
-function afterAuthChange() { if (typeof renderRecent === 'function') renderRecent(); }
+function afterAuthChange() { if (typeof renderRecent === 'function') renderRecent(); if (typeof onWalletAuth === 'function') onWalletAuth(); }
 
 /* ---------------- tabs ---------------- */
 const VIEWS = ['overview', 'leaderboard', 'copy', 'picks', 'terminal', 'vault'];
@@ -1790,13 +1771,18 @@ const active = new Map([
   ['funding_farmer', { budget: 3000, size: '15% proportional · cap 4.0 SOL', fee: 'fast', slip: 0.5, exits: 'SL -10%', guards: 4, pnl: 286.40, trades: 12 }],
   ['sharp_sundays', { budget: 800, size: '1.00 SOL fixed', fee: 'turbo', slip: 1, exits: 'TP +80%', guards: 4, pnl: -54.72, trades: 9 }],
 ]);
-// demo funds: everything not set aside for a copy or a bet
-const funds = { available: 1250 };
+// the signed-in user's real SOL wallet (filled in by the wallet service on mlrg.lol)
+const wallet = { address: null, sol: null, cluster: null, loading: false, err: null, activity: null };
+const fmtSol = v => (v == null ? '—' : (v >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : v.toLocaleString('en-US', { maximumFractionDigits: 4 })) + ' SOL');
 function renderFunds() {
-  $('#bal').textContent = usd(funds.available);
-  $('#q-bal').textContent = usd(funds.available);
-  const working = [...active.values()].reduce((s, c) => s + c.budget, 0);
-  $('#q-alloc').textContent = `${usd(working, 0)} working across ${active.size} cop${active.size === 1 ? 'y' : 'ies'} · demo funds`;
+  const txt = !session ? '—' : wallet.loading && wallet.sol == null ? '…' : fmtSol(wallet.sol);
+  $('#bal').textContent = txt;
+  $('#q-bal').textContent = txt;
+  $('#q-alloc').textContent = !session ? 'Sign in to get your own Solana deposit address'
+    : !LIVE ? 'Real deposits work on mlrg.lol'
+    : wallet.err ? wallet.err
+    : `${wallet.cluster === 'mainnet' ? 'Solana' : 'Solana ' + (wallet.cluster || '')} · copy trading is practice mode and doesn't use this SOL`;
+  if (typeof renderVaultWallet === 'function') renderVaultWallet();
 }
 function renderCopies() {
   const rows = [...active].map(([h, c]) => {
@@ -1905,18 +1891,14 @@ function openModal(h) {
   $('#m-start').textContent = active.has(h) ? 'Save changes' : 'Start copying';
   $('#m-cancel').textContent = active.has(h) ? 'Stop copying' : 'Cancel';
   const prev = active.get(h);
-  $('#budget').value = prev ? prev.budget : Math.max(0, Math.min(500, Math.floor(funds.available)));
+  $('#budget').value = prev ? prev.budget : 500;
   budgetNote();
   $('#scrim').hidden = false; summary();
   setTimeout(() => $('#m-close').focus(), 30);
 }
-// how much this copy may use: free balance plus whatever it already holds
-const budgetMax = () => funds.available + ((current && active.get(current.h)) ? active.get(current.h).budget : 0);
-function budgetNote() {
-  $('#budget-avail').textContent = `Available: ${usd(budgetMax())}`;
-  $('#budget-err').hidden = true;
-}
-$$('[data-bp]').forEach(b => b.addEventListener('click', () => { $('#budget').value = Math.floor(budgetMax() * +b.dataset.bp); budgetNote(); }));
+// copy trading is practice mode: budgets are simulated and never touch the user's SOL
+function budgetNote() { $('#budget-err').hidden = true; }
+$$('[data-ba]').forEach(b => b.addEventListener('click', () => { $('#budget').value = b.dataset.ba; budgetNote(); }));
 $('#budget').addEventListener('input', budgetNote);
 function closeModal() { $('#scrim').hidden = true; lastFocus && lastFocus.focus && lastFocus.focus(); }
 $('#m-close').addEventListener('click', closeModal);
@@ -1930,11 +1912,9 @@ document.addEventListener('keydown', e => {
 });
 function stopCopy(h) {
   const c = active.get(h); if (!c) return;
-  const back = Math.max(0, c.budget + c.pnl);
-  funds.available += back;
   active.delete(h);
-  addLine({ cls: 'block', st: 'STOPPED', msg: `<b>${esc(h)}</b> copy stopped · ${usd(back)} returned to balance`, lat: '—' });
-  toast(`Stopped copying ${h} · ${usd(back)} returned to balance`);
+  addLine({ cls: 'block', st: 'STOPPED', msg: `<b>${esc(h)}</b> practice copy stopped`, lat: '—' });
+  toast(`Stopped copying ${h}`);
   afterCopyChange();
 }
 $('#m-cancel').addEventListener('click', () => {
@@ -1949,12 +1929,7 @@ $('#m-start').addEventListener('click', () => {
   const was = active.has(current.h), prev = active.get(current.h);
   const budget = Math.round((parseFloat($('#budget').value) || 0) * 100) / 100;
   const err = $('#budget-err');
-  if (budget < 10) { err.innerHTML = 'Set a budget of at least $10.'; err.hidden = false; return; }
-  if (budget > budgetMax() + 0.001) {
-    err.innerHTML = `Not enough balance. You have ${usd(budgetMax())} available. <button class="btn primary" data-deposit>Deposit funds</button>`;
-    err.hidden = false; return;
-  }
-  funds.available -= budget - (prev ? prev.budget : 0);
+  if (budget < 10) { err.innerHTML = 'Set a practice budget of at least $10.'; err.hidden = false; return; }
   active.set(current.h, {
     budget,
     size: cfg.alloc === 'fixed' ? (+$('#fixed-amt').value || 0).toFixed(2) + ' SOL fixed' : $('#prop-pct').value + '% proportional · cap ' + (+$('#prop-cap').value || 0).toFixed(1) + ' SOL',
@@ -1962,8 +1937,8 @@ $('#m-start').addEventListener('click', () => {
     exits: [$('#sl-on').checked && 'SL -' + $('#sl').value + '%', $('#tp-on').checked && 'TP +' + $('#tp').value + '%'].filter(Boolean).join(' · ') || 'no auto exits',
     guards: $$('.guards input:checked').length, pnl: prev ? prev.pnl : 0, trades: prev ? prev.trades : 0,
   });
-  toast(was ? 'Saved settings for ' + current.h : 'Now copying ' + current.h + ' · ' + cfg.fee + ' priority');
-  if (!was) addLine({ cls: 'ok', st: 'ARMED', msg: `<b>${current.h}</b> copy engine armed · ${cfg.alloc === 'fixed' ? $('#fixed-amt').value + ' SOL fixed' : $('#prop-pct').value + '% proportional'} · slip ${cfg.slip}%`, lat: '—' });
+  toast(was ? 'Saved settings for ' + current.h : 'Practice copying ' + current.h + ' · no real SOL used');
+  if (!was) addLine({ cls: 'ok', st: 'ARMED', msg: `<b>${current.h}</b> practice copy armed · ${cfg.alloc === 'fixed' ? $('#fixed-amt').value + ' SOL fixed' : $('#prop-pct').value + '% proportional'} · slip ${cfg.slip}%`, lat: '—' });
   afterCopyChange(); closeModal();
 });
 function afterCopyChange() { renderCopies(); renderLB(); renderFunds(); renderWallet(); }
@@ -2058,46 +2033,159 @@ function renderWallet() {
   if (start) start.addEventListener('click', () => { walletTrader(p); openModal(p.handle); });
 }
 
-/* ---------------- deposit / withdraw ---------------- */
-const dep = { mode: 'dep', asset: 'USDC' };
-const SOL_PX = 153.70;
-function openDeposit() {
-  if (!requireAuth(openDeposit, 'Sign in to add funds')) return;
-  if (!$('#scrim').hidden) $('#scrim').hidden = true;
-  $('#dep-scrim').hidden = false; $('#d-err').hidden = true; depSummary();
-  setTimeout(() => $('#d-amt').focus(), 30);
+/* ---------------- SOL wallet: deposit / withdraw (Supabase Edge Function "wallet") ---------------- */
+const dep = { mode: 'dep', step: 'form', to: '', sol: '', result: null, busy: false };
+async function walletCall(action, extra) {
+  const { data } = await sb.auth.getSession();
+  const s = data && data.session;
+  if (!s) throw new Error('Sign in again.');
+  let r;
+  try {
+    r = await fetch(CFG.supabaseUrl + '/functions/v1/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token, apikey: CFG.supabaseAnonKey },
+      body: JSON.stringify(Object.assign({ action }, extra || {})),
+    });
+  } catch (e) { throw new Error('Kopex couldn\'t reach the wallet service. Check your connection.'); }
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 404 && !d.error) throw new Error('The wallet service isn\'t set up yet.');
+  if (!r.ok || d.error) throw new Error(d.error || `Wallet service error (${r.status}).`);
+  return d;
+}
+async function refreshWallet(quiet) {
+  if (!LIVE || !session) return;
+  wallet.loading = true; if (!quiet) renderFunds();
+  try {
+    const d = await walletCall('get');
+    const before = wallet.sol;
+    Object.assign(wallet, { address: d.address, sol: d.sol, cluster: d.cluster, err: null });
+    if (before != null && d.sol > before + 1e-9) {
+      toast(`Deposit received: +${fmtSol(d.sol - before)}`);
+      addLine({ cls: 'ok', st: 'DEPOSIT', msg: `<b>Received</b> ${fmtSol(d.sol - before)} in your Kopex wallet`, lat: '—' });
+      if (!$('#dep-scrim').hidden) loadActivity();
+    }
+  } catch (e) { wallet.err = e.message; }
+  wallet.loading = false; renderFunds();
+  if (!$('#dep-scrim').hidden && dep.step === 'form') renderDeposit();
+}
+function onWalletAuth() {
+  if (!session) Object.assign(wallet, { address: null, sol: null, cluster: null, err: null, activity: null });
+  renderFunds();
+  if (session) refreshWallet();
+}
+// watch for incoming deposits: every 15s while the wallet window is open, every 60s otherwise
+setInterval(() => { if (session && LIVE && !document.hidden && $('#dep-scrim').hidden) refreshWallet(true); }, 60000);
+setInterval(() => { if (session && LIVE && !document.hidden && !$('#dep-scrim').hidden) refreshWallet(true); }, 15000);
+
+const explorer = (kind, id) => `https://solscan.io/${kind}/${id}${wallet.cluster && wallet.cluster !== 'mainnet' ? '?cluster=' + wallet.cluster : ''}`;
+function openDeposit(mode) {
+  if (!requireAuth(() => openDeposit(mode), 'Sign in to deposit SOL')) return;
+  $$('.scrim').forEach(x => { if (x.id !== 'dep-scrim') x.hidden = true; });
+  Object.assign(dep, { step: 'form', result: null, mode: mode === 'wd' ? 'wd' : 'dep' });
+  $$('#d-mode [data-v]').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === dep.mode));
+  $('#dep-scrim').hidden = false; renderDeposit();
+  if (LIVE) { refreshWallet(); loadActivity(); }
 }
 function closeDeposit() { $('#dep-scrim').hidden = true; }
-function depSummary() {
-  const a = parseFloat($('#d-amt').value) || 0;
-  $('#d-title').textContent = dep.mode === 'dep' ? 'Add funds' : 'Withdraw funds';
-  $('#d-go').textContent = dep.mode === 'dep' ? 'Add funds' : 'Withdraw';
-  $('#d-conv').textContent = dep.asset === 'SOL' ? `≈ ${(a / SOL_PX).toFixed(4)} SOL at $${SOL_PX}` : `${a.toLocaleString('en-US')} USDC on Solana`;
-  const after = dep.mode === 'dep' ? funds.available + a : funds.available - a;
-  $('#d-sum').innerHTML = `<span>Balance now <b>${usd(funds.available)}</b></span><span>After <b>${usd(after)}</b></span>`;
-}
-function depSeg(id, key) {
-  $$(`#${id} [data-v]`).forEach(b => b.addEventListener('click', () => {
-    $$(`#${id} [data-v]`).forEach(x => x.setAttribute('aria-pressed', x === b));
-    dep[key] = b.dataset.v; depSummary();
-  }));
-}
-depSeg('d-mode', 'mode'); depSeg('d-asset', 'asset');
-$$('#d-quick [data-a]').forEach(b => b.addEventListener('click', () => { $('#d-amt').value = b.dataset.a; depSummary(); }));
-$('#d-amt').addEventListener('input', depSummary);
 $('#d-close').addEventListener('click', closeDeposit);
-$('#d-cancel').addEventListener('click', closeDeposit);
 $('#dep-scrim').addEventListener('click', e => { if (e.target.id === 'dep-scrim') closeDeposit(); });
-$('#d-go').addEventListener('click', () => {
-  const a = Math.round((parseFloat($('#d-amt').value) || 0) * 100) / 100, err = $('#d-err');
-  if (a <= 0) { err.textContent = 'Enter an amount above $0.'; err.hidden = false; return; }
-  if (dep.mode === 'wd' && a > funds.available) { err.textContent = `You can withdraw up to ${usd(funds.available)}. Stop a copy to free up more.`; err.hidden = false; return; }
-  funds.available += dep.mode === 'dep' ? a : -a;
-  const amtTxt = dep.asset === 'SOL' ? (a / SOL_PX).toFixed(4) + ' SOL' : a.toLocaleString('en-US') + ' USDC';
-  addLine({ cls: 'ok', st: dep.mode === 'dep' ? 'DEPOSIT' : 'WITHDRAW', msg: `<b>${dep.mode === 'dep' ? 'Deposited' : 'Withdrew'}</b> ${amtTxt} (${usd(a)}) · demo funds`, lat: '—' });
-  toast(`${dep.mode === 'dep' ? 'Added' : 'Withdrew'} ${usd(a)} · balance ${usd(funds.available)}`);
-  renderFunds(); closeDeposit();
+$('#d-refresh').addEventListener('click', () => { refreshWallet(); loadActivity(); });
+$$('#d-mode [data-v]').forEach(b => b.addEventListener('click', () => {
+  Object.assign(dep, { mode: b.dataset.v, step: 'form', result: null });
+  $$('#d-mode [data-v]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderDeposit();
+}));
+function renderDeposit() {
+  $('#d-bal').textContent = 'Balance ' + fmtSol(wallet.sol) + (wallet.cluster && wallet.cluster !== 'mainnet' ? ' · ' + wallet.cluster : '');
+  const pane = $('#d-pane');
+  $('#d-activity-sec').hidden = !LIVE;
+  if (!LIVE) {
+    pane.innerHTML = '<div class="sec"><p class="note" style="margin:0">This preview can\'t hold real SOL. Open <b>mlrg.lol</b> and sign in: your account gets its own Solana address to deposit to and withdraw from.</p></div>';
+    return;
+  }
+  if (wallet.err && !wallet.address) { pane.innerHTML = `<div class="sec"><div class="err">${esc(wallet.err)}</div><button class="btn" id="d-retry" style="justify-self:start">Try again</button></div>`; return; }
+  if (!wallet.address) { pane.innerHTML = '<div class="sec"><div class="thinking"><span class="dot pulse"></span>Setting up your Solana address…</div></div>'; return; }
+  const testnet = wallet.cluster && wallet.cluster !== 'mainnet';
+  if (dep.mode === 'dep') {
+    pane.innerHTML = `<div class="sec">
+      ${testnet ? `<div class="err" style="color:var(--fg-2)">Test network (${esc(wallet.cluster)}): only send ${esc(wallet.cluster)} SOL here, never real SOL.</div>` : ''}
+      <div class="qr" aria-label="QR code of your deposit address">${qrSvg('solana:' + wallet.address)}</div>
+      <div class="field"><span class="lbl">Your deposit address</span>
+        <div class="locked mono" style="height:auto;padding:10px;font-size:12px">${esc(wallet.address)}</div></div>
+      <div class="bet-row"><button class="btn primary" data-copylink="${esc(wallet.address)}" data-copymsg="Address copied">Copy address</button><a class="btn" href="${explorer('account', wallet.address)}" target="_blank" rel="noopener">View on Solscan ↗</a></div>
+      <ul class="factors" style="color:var(--muted);font-size:12.5px">
+        <li>Send <b>SOL only</b>, on the <b>Solana</b> network. Other coins or networks can be lost.</li>
+        <li>Your balance updates by itself, usually within a minute.</li>
+        <li>This address is yours alone and stays the same.</li>
+      </ul>
+    </div>`;
+    return;
+  }
+  if (dep.step === 'done' && dep.result) {
+    pane.innerHTML = `<div class="sec"><span class="ai-chip" style="justify-self:start">Sent ${fmtSol(+dep.sol)}</span>
+      <p style="margin:0;color:var(--fg-2)">On its way to <span class="mono">${esc(shortAddr(dep.to))}</span>.</p>
+      <a class="btn" style="justify-self:start" href="${explorer('tx', dep.result)}" target="_blank" rel="noopener">View transaction ↗</a></div>`;
+    return;
+  }
+  if (dep.step === 'confirm') {
+    pane.innerHTML = `<div class="sec">
+      <p style="margin:0;color:var(--fg-2)">Send <b>${fmtSol(+dep.sol)}</b> to:</p>
+      <div class="locked mono" style="height:auto;padding:10px;font-size:12px">${esc(dep.to)}</div>
+      <p class="note" style="margin:0">Network fee 0.000005 SOL. Solana transfers can't be reversed, so check the address carefully.</p>
+      <div class="err" id="w-err" hidden></div>
+      <div class="bet-row"><button class="btn ghost" id="w-back">Back</button><span class="spacer"></span><button class="btn primary" id="w-send">Confirm withdrawal</button></div>
+    </div>`;
+    return;
+  }
+  const max = Math.max(0, (wallet.sol || 0) - 0.000005);
+  pane.innerHTML = `<div class="sec">
+    <div class="field"><label for="w-to">Send to (Solana address)</label><input class="inp mono" id="w-to" autocomplete="off" spellcheck="false" placeholder="Your Phantom or exchange SOL address" value="${esc(dep.to)}"></div>
+    <div class="field"><label for="w-amt">Amount</label>
+      <div class="bet-row"><div class="inp-suf" style="flex:1;min-width:0"><input class="inp" id="w-amt" type="number" min="0" step="0.01" value="${esc(dep.sol)}" placeholder="0.00"><span>SOL</span></div><button class="pill" id="w-max">Max</button></div>
+      <span class="note">Available ${fmtSol(max)} after the network fee</span></div>
+    <div class="err" id="w-err" hidden></div>
+    <button class="btn primary lg auth-btn" id="w-review">Review withdrawal</button>
+  </div>`;
+}
+const SOL_ADDR_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+$('#d-pane').addEventListener('click', async e => {
+  if (e.target.closest('#d-retry')) { wallet.err = null; renderDeposit(); refreshWallet(); return; }
+  if (e.target.closest('#w-max')) { $('#w-amt').value = Math.max(0, (wallet.sol || 0) - 0.000005).toFixed(9).replace(/0+$/, '').replace(/\.$/, ''); return; }
+  if (e.target.closest('#w-back')) { dep.step = 'form'; renderDeposit(); return; }
+  const err = m => { const el = $('#w-err'); if (el) { el.textContent = m; el.hidden = false; } };
+  if (e.target.closest('#w-review')) {
+    const to = $('#w-to').value.trim(), sol = parseFloat($('#w-amt').value);
+    dep.to = to; dep.sol = $('#w-amt').value;
+    if (!SOL_ADDR_RE.test(to)) return err('That isn\'t a valid Solana address.');
+    if (to === wallet.address) return err('That\'s your Kopex address. Withdraw to a different wallet.');
+    if (!(sol > 0)) return err('Enter an amount above 0 SOL.');
+    if (sol + 0.000005 > (wallet.sol || 0) + 1e-9) return err(`You have ${fmtSol(wallet.sol)}. Lower the amount or press Max.`);
+    Object.assign(dep, { sol: String(sol), step: 'confirm' }); renderDeposit(); return;
+  }
+  if (e.target.closest('#w-send')) {
+    if (dep.busy) return;
+    dep.busy = true; const b = $('#w-send'); b.disabled = true; b.textContent = 'Sending…';
+    try {
+      const d = await walletCall('withdraw', { to: dep.to, sol: +dep.sol });
+      dep.result = d.signature; dep.step = 'done';
+      addLine({ cls: 'ok', st: 'WITHDRAW', msg: `<b>Sent</b> ${fmtSol(+dep.sol)} to ${esc(shortAddr(dep.to))}`, lat: '—', hash: d.signature.slice(0, 6) + '…' + d.signature.slice(-4), href: explorer('tx', d.signature) });
+      toast('Withdrawal sent');
+      renderDeposit(); refreshWallet(true); loadActivity();
+    } catch (x) { b.disabled = false; b.textContent = 'Confirm withdrawal'; err(x.message); }
+    dep.busy = false;
+  }
 });
+async function loadActivity() {
+  if (!LIVE || !session) return;
+  const el = $('#d-activity');
+  try {
+    const d = await walletCall('activity');
+    const outs = new Set((d.withdrawals || []).map(w => w.signature));
+    el.innerHTML = d.signatures && d.signatures.length
+      ? d.signatures.map(s => `<div class="prow" style="padding:6px 0"><span>${outs.has(s.signature) ? 'Withdrawal' : 'Deposit'}${s.ok ? '' : ' <span class="loss">failed</span>'}</span><span class="r dim">${s.time ? new Date(s.time * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</span><a class="pm-link r" href="${explorer('tx', s.signature)}" target="_blank" rel="noopener">${s.signature.slice(0, 6)}… ↗</a></div>`).join('')
+      : 'Nothing yet. Deposits show up here.';
+  } catch (x) { el.textContent = x.message; }
+}
 
 /* ---------------- terminal ---------------- */
 const log = $('#log');
@@ -2164,24 +2252,16 @@ $('#pause-btn').addEventListener('click', e => {
 $('#clear-btn').addEventListener('click', () => { log.innerHTML = ''; events = 0; $('#term-count').textContent = '0 events'; });
 
 /* ---------------- vault ---------------- */
-const WALLETS = [
-  { c: 'SOL', n: 'Main signer', role: 'Primary', ad: '9wRt…f4Xq', bal: '142.38 SOL', usd: 21883.12, on: true },
-  { c: 'SOL', n: 'Burner · memecoins', role: 'Isolated', ad: 'Bk7m…2pLz', bal: '3.10 SOL', usd: 476.47, on: true },
-  { c: 'HL', n: 'Hyperliquid margin', role: 'Perps', ad: '0x4a1c…9e02', bal: '18,420.00 USDC', usd: 18420, on: true },
-  { c: 'POL', n: 'Polymarket proxy', role: 'Prediction', ad: '0x77d0…c13b', bal: '6,215.40 USDC.e', usd: 6215.4, on: true },
-  { c: 'BASE', n: 'Tokenized equities', role: 'TradFi', ad: '0xe92f…04aa', bal: '1,218.63 USDC', usd: 1218.63, on: false },
-];
-$('#wallets').innerHTML = WALLETS.map((w, i) => `
-  <div class="wl">
-    <div class="chain">${w.c}</div>
-    <div style="min-width:0"><div class="n">${w.n} <span class="tag n">${w.role}</span></div><div class="ad">${w.ad}</div></div>
-    <div class="bal money">${w.bal}<small>${usd(w.usd)}</small></div>
-    <label class="sw"><input type="checkbox" id="w-${i}" ${w.on ? 'checked' : ''} aria-label="Use ${w.n} for copy trades"><span></span></label>
-  </div>`).join('');
-$$('#wallets input').forEach((inp, i) => inp.addEventListener('change', () => toast((inp.checked ? 'Enabled ' : 'Paused ') + WALLETS[i].n)));
-$('#add-wallet').addEventListener('click', () => toast('Wallet connections are disabled in this demo'));
-
-let integ = 4; setInterval(() => { integ = integ >= 30 ? 0 : integ + 1; $('#integrity').textContent = integ === 0 ? 'running now…' : `last run ${integ}s ago`; }, 1000);
+function renderVaultWallet() {
+  const el = $('#wallets'); if (!el) return;
+  if (!session) { el.innerHTML = '<div class="empty" style="padding:16px">Sign in to get your own Solana deposit address.</div>'; return; }
+  if (!LIVE) { el.innerHTML = '<div class="empty" style="padding:16px">Your real deposit address shows on mlrg.lol.</div>'; return; }
+  el.innerHTML = `<div class="wl">
+    <div class="chain">SOL</div>
+    <div style="min-width:0"><div class="n">Kopex wallet <span class="tag n">${esc(wallet.cluster || 'Solana')}</span></div><div class="ad">${wallet.address ? esc(wallet.address) : (wallet.err ? esc(wallet.err) : 'Creating your address…')}</div></div>
+    <div class="bal money mono">${fmtSol(wallet.sol)}</div>
+  </div>`;
+}
 
 let keyVal = '', keyShown = false;
 function showKey() { $('#key-text').textContent = keyShown ? keyVal : keyVal.slice(0, 14) + '•'.repeat(20) + keyVal.slice(-4); $('#key-reveal').textContent = keyShown ? 'Hide' : 'Reveal'; }
@@ -2308,8 +2388,50 @@ const ERR_TXT = {
   refused: 'Claude declined this one. Try rewording it.',
   session_expired: 'Sign in to claude.ai again to use predictions.',
   prompt_too_large: 'Too many markets to send at once. Pick a sport filter first.',
+  needs_signin: 'Sign in to get AI predictions.',
+  not_deployed: "AI predictions aren't switched on for this site yet.",
+  network: "Kopex couldn't reach the AI service. Check your connection.",
 };
-const errText = c => ERR_TXT[c] || 'Could not reach Claude. Try again.';
+// m: a message written for users by Kopex's own predict service (never claude.ai's developer messages)
+const errText = (c, m) => m || ERR_TXT[c] || 'Could not reach Claude. Try again.';
+const errOf = err => errText(err && err.code, err && err.server ? err.message : '');
+// One way to ask Claude for JSON: claude.ai's built-in AI in the preview, Kopex's own `predict` service on the hosted site.
+// Same shape as sample.json: resolves parsed JSON, rejects { code, message }.
+async function aiJson(prompt, opts) {
+  const { kind, ...rest } = opts || {};
+  const sample = await samplerP;
+  if (sample) return sample.json(prompt, rest);
+  if (!LIVE) throw { code: 'unavailable' };
+  if (!session) throw { code: 'needs_signin' };
+  const { data } = await sb.auth.getSession();
+  const tok = data && data.session && data.session.access_token;
+  if (!tok) throw { code: 'needs_signin' };
+  let r;
+  try {
+    r = await fetch(CFG.supabaseUrl + '/functions/v1/predict', {
+      method: 'POST', signal: rest.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, apikey: CFG.supabaseAnonKey },
+      body: JSON.stringify({ prompt, kind: kind || 'game' }),
+    });
+  } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 404 && !d.error) throw { code: 'not_deployed' };
+  if (r.status === 401) throw { code: 'needs_signin' };
+  if (!r.ok || d.error) throw { code: d.code || (r.status === 429 ? 'rate_limited' : 'service'), message: d.error, server: true };
+  if (rest.onText) rest.onText({ text: d.text, delta: d.text });
+  const v = looseJson(d.text || '');
+  if (v === undefined) throw { code: 'invalid_json' };
+  return v;
+}
+// the reply as JSON; else a fenced block; else from the first { or [ to the last } or ]
+function looseJson(t) {
+  try { return JSON.parse(t); } catch (e) {}
+  const f = /```(?:json)?\s*([\s\S]*?)```/.exec(t);
+  if (f) { try { return JSON.parse(f[1]); } catch (e) {} }
+  const a = t.search(/[[{]/), b = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+  return undefined;
+}
 const PERMANENT = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
 function setAiOff(msg) {
   aiOff = true;
@@ -2382,20 +2504,20 @@ function renderMarkets() {
   $('#mk-more').textContent = `Show more markets (${list.length - mkShown} left)`;
 }
 async function predictEvent(e, fresh) {
-  const sample = await samplerP;
-  if (!sample) { setAiOff(); return; }
+  if (aiOff) return;
   const ctl = new AbortController();
   ai[e.id] = { loading: true, ctl }; renderEvent(e);
   const names = e.lines.map(l => l.k);
   try {
-    const res = await sample.json([preamble(), 'Market:', evLine(e), '',
+    const res = await aiJson([preamble(), 'Market:', evLine(e), '',
       `Reply with only one JSON object: {"line": one of ${JSON.stringify(names)}, "outcome": exactly one outcome name from that line or "No bet", "win_prob": number 0-100 (your probability that outcome wins), "confidence": "low"|"medium"|"high", "headline": string under 90 characters, "factors": [3 short strings], "upset_alert": boolean, "bold_take": one punchy sentence, "data_note": short string}`].join('\n'),
-      { signal: ctl.signal, cache: fresh ? false : true, onText: () => { if (ai[e.id] && !ai[e.id].text) { ai[e.id].text = true; renderEvent(e); } } });
+      { kind: 'game', signal: ctl.signal, cache: fresh ? false : true, onText: () => { if (ai[e.id] && !ai[e.id].text) { ai[e.id].text = true; renderEvent(e); } } });
     const pred = normalize(e, Array.isArray(res) ? res[0] : res);
     ai[e.id] = pred ? { pred } : { err: 'No prediction came back. Try again.' };
   } catch (err) {
     const code = err && err.code;
-    ai[e.id] = code === 'cancelled' ? {} : { err: errText(code) };
+    ai[e.id] = code === 'cancelled' || code === 'needs_signin' ? {} : { err: errOf(err) };
+    if (code === 'needs_signin') requireAuth(() => predictEvent(e, fresh), 'Sign in to get AI predictions');
     if (PERMANENT.includes(code)) setAiOff(errText(code));
   } finally { renderEvent(e); }
 }
@@ -2407,25 +2529,32 @@ $('#games').addEventListener('click', ev => {
 document.addEventListener('click', ev => {
   const pb = ev.target.closest('[data-phone]'); if (pb) showPhone(pb.dataset.phone);
   const cl = ev.target.closest('[data-copylink]');
-  if (cl) navigator.clipboard.writeText(cl.dataset.copylink).then(() => toast('Link copied · send it to your phone'), () => toast('Copy blocked · use Open on Polymarket instead'));
+  if (cl) navigator.clipboard.writeText(cl.dataset.copylink).then(() => toast(cl.dataset.copymsg || 'Link copied · send it to your phone'), () => toast('Copy blocked · use Open on Polymarket instead'));
 });
 
 /* --- predict a whole screen of games in one call --- */
 let autoDone = false;
-function onPicksOpen() { if (!autoDone && !aiOff) { autoDone = true; predictBatch(filtered()); } }
+function onPicksOpen() {
+  if (autoDone || aiOff) return;
+  samplerP.then(s => {
+    // on the hosted site predictions need an account; don't pop a sign-in box just for opening the page
+    if (!s && !session) { $('#ai-status').textContent = 'Sign in to see who the AI thinks will win.'; return; }
+    if (autoDone) return;
+    autoDone = true; predictBatch(filtered());
+  });
+}
 async function predictBatch(list) {
   const games = list.filter(e => e.type === 'game' && !e.ended && !(ai[e.id] && (ai[e.id].pred || ai[e.id].loading))).slice(0, 10);
   if (!games.length) { toast('Every game on screen already has a prediction'); return; }
-  const sample = await samplerP;
-  if (!sample) { setAiOff(); return; }
+  if (aiOff) return;
   const ctl = new AbortController();
   games.forEach(e => { ai[e.id] = { loading: true, ctl }; renderEvent(e); });
   $('#ai-batch').disabled = true;
   try {
-    const res = await sample.json([preamble(), 'Markets:', ...games.map(evLine), '',
+    const res = await aiJson([preamble(), 'Markets:', ...games.map(evLine), '',
       'For EACH market say who you think wins. For live games, weigh the current score and clock heavily.',
       'Reply with only a JSON array, one object per market: {"event_id": "E<id>", "line": "Moneyline" or "Result", "outcome": exact outcome name as shown, "win_prob": number 0-100, "confidence": "low"|"medium"|"high", "headline": string under 90 characters, "factors": [2-3 short strings], "upset_alert": boolean, "bold_take": one punchy sentence or "", "data_note": short string}'].join('\n'),
-      { signal: ctl.signal, cache: { gcTime: 6 * 36e5 } });
+      { kind: 'slate', signal: ctl.signal, cache: { gcTime: 6 * 36e5 } });
     const arr = Array.isArray(res) ? res : (res && Array.isArray(res.picks) ? res.picks : []);
     games.forEach(e => {
       const r = arr.find(x => x && (String(x.event_id) === 'E' + e.id || String(x.event_id) === e.id));
@@ -2434,7 +2563,8 @@ async function predictBatch(list) {
     });
   } catch (err) {
     const code = err && err.code;
-    games.forEach(e => { ai[e.id] = code === 'cancelled' ? {} : { err: errText(code) }; });
+    games.forEach(e => { ai[e.id] = code === 'cancelled' || code === 'needs_signin' ? {} : { err: errOf(err) }; });
+    if (code === 'needs_signin') requireAuth(() => predictBatch(list), 'Sign in to get AI predictions');
     if (PERMANENT.includes(code)) setAiOff(errText(code));
   } finally {
     $('#ai-batch').disabled = aiOff;
@@ -2470,22 +2600,21 @@ $('#ask-go').addEventListener('click', async () => {
   const q = $('#ask-q').value.trim(), out = $('#ask-out');
   if (!q) { $('#ask-q').focus(); toast('Type what you want to bet on first'); return; }
   if (!EVENTS.length) { out.innerHTML = '<div class="err">No markets loaded yet.</div>'; return; }
-  const sample = await samplerP;
-  if (!sample) { setAiOff(); out.innerHTML = '<div class="note">AI predictions run when this page is opened on claude.ai.</div>'; return; }
+  if (aiOff) { out.innerHTML = '<div class="note">AI predictions aren&#39;t available here.</div>'; return; }
   const cands = candidates(q);
   askCtl = new AbortController();
   $('#ask-go').disabled = true; $('#ask-stop').hidden = false;
   out.innerHTML = `<div class="thinking"><span class="dot pulse"></span>Reading ${cands.length} markets… the deep model can take a minute or two</div>`;
   let started = false;
   try {
-    const res = await sample.json([
+    const res = await aiJson([
       preamble(),
       `The user asks: """${q.slice(0, 600)}"""`,
       'Candidate markets (choose only from these):', ...cands.map(evLine), '',
       'Answer the user using only these markets. Choose up to 4 bets that best fit the request (for a parlay, the picks are the legs). Prefer bets where your probability beats the price. If nothing fits, return an empty picks array and say why in summary.',
       'Reply with only JSON: {"summary": 1-3 sentences answering the user directly, "picks": [{"event_id": "E<id>", "line": line name as shown, "outcome": exact outcome name as shown, "win_prob": number 0-100, "confidence": "low"|"medium"|"high", "reasoning": 1-2 sentences, "bold_take": one punchy sentence or ""}], "parlay_note": string or "", "data_note": short string}',
     ].join('\n'), {
-      signal: askCtl.signal, cache: false, modelTier: 'complex',
+      kind: 'ask', signal: askCtl.signal, cache: false, modelTier: 'complex',
       onText: () => { if (!started) { started = true; out.innerHTML = '<div class="thinking"><span class="dot pulse"></span>Writing picks…</div>'; } },
     });
     const picks = (Array.isArray(res && res.picks) ? res.picks : []).map(r => {
@@ -2503,7 +2632,8 @@ $('#ask-go').addEventListener('click', async () => {
       ${res && res.data_note ? `<div class="note">${esc(res.data_note)}</div>` : ''}`;
   } catch (err) {
     const code = err && err.code;
-    out.innerHTML = code === 'cancelled' ? '' : `<div class="err">${esc(errText(code))}</div>`;
+    out.innerHTML = code === 'cancelled' || code === 'needs_signin' ? '' : `<div class="err">${esc(errOf(err))}</div>`;
+    if (code === 'needs_signin') requireAuth(() => $('#ask-go').click(), 'Sign in to get AI predictions');
     if (PERMANENT.includes(code)) setAiOff(errText(code));
   } finally {
     $('#ask-go').disabled = aiOff; $('#ask-stop').hidden = true;
@@ -2560,7 +2690,7 @@ function renderRecent() {
 $('#pm-asof').innerHTML = `<span class="dot"></span>Polymarket · ${esc(asOfTxt)}`;
 $('#ai-status').textContent = `${EVENTS.filter(e => e.live).length} games live · ${EVENTS.length} sports markets from Polymarket · scores and prices as of ${asOfTxt}. No crypto.`;
 renderLgFilters(); renderExamples(); renderMarkets(); renderRecent();
-samplerP.then(s => { if (!s) setAiOff(); });
+samplerP.then(s => { if (!s && !LIVE) setAiOff(); });
 
 renderFilters(); renderLB(); renderCopies(); renderFunds(); renderAcct();
 const h = (location.hash || '').slice(1);
