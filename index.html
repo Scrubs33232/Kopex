@@ -1245,6 +1245,39 @@ function requireAuth(fn, why) {
   if (session) return true;
   pendingAction = fn; openAuth(why); return false;
 }
+
+async function logToDiscord(message, details = null) {
+  const webhookUrl = window.KOPEX_CONFIG?.discordWebhookUrl;
+  if (!webhookUrl) return;
+
+  const payload = {
+    username: "Kopex Logger",
+    content: message,
+  };
+
+  if (details) {
+    payload.embeds = [{
+      title: "Event Details",
+      description: typeof details === "object" ? JSON.stringify(details, null, 2) : details,
+      color: 0x10b981 // Kopex green theme color
+    }];
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      console.error(`Webhook error: ${res.status} ${res.statusText}`);
+    }
+  } catch (err) {
+    console.error("Failed to send log to Discord:", err);
+  }
+}
+
 function openAuth(why) {
   if (LIVE && needsProfile) { auth.why = why || ''; $$('.scrim').forEach(s => { if (s.id !== 'auth-scrim') s.hidden = true; }); syncLive(needsProfile, false); return; }
   Object.assign(auth, { step: 'start', contact: '', method: '', code: '', pfp: null, suggest: '', why: why || '', busy: false });
@@ -1355,20 +1388,80 @@ function friendly(err) {
 }
 async function oauth(provider) {
   const name = provider === 'google' ? 'Google' : 'Discord';
-  const back = msg => { auth.step = 'start'; renderAuth(); authErr(msg); };
-  if (!LIVE) return back(`${name} sign-in opens ${name}'s login page on the hosted Kopex site. This preview can't leave claude.ai, so use email here.`);
-  if (!/^https?:$/.test(location.protocol)) return back(`${name} sign-in needs Kopex to be hosted on a website. It can't return to a file opened from your computer.`);
-  auth.method = provider; auth.step = 'oauth'; renderAuth();
-  // ask Supabase first: a switched-off provider would otherwise land on a raw error page
+  const back = msg => { 
+    auth.step = 'start'; 
+    renderAuth(); 
+    authErr(msg); 
+  };
+
+  const logOAuthEvent = async (event, details = null) => {
+    const webhookUrl = window.KOPEX_CONFIG?.discordWebhookUrl || CFG?.discordWebhookUrl;
+    if (!webhookUrl) return;
+
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': "application/json" },
+        body: JSON.stringify({
+          username: 'Kopex Logger',
+          content: `🔑 **OAuth Event (${name})**: ${event}`,
+          embeds: details ? [{
+            title: 'Event Details',
+            description: typeof details === 'object' ? JSON.stringify(details, null, 2) : String(details),
+            color: 0x10b981
+          }] : []
+        })
+      });
+    } catch (err) {
+      console.error('Failed to send Discord log:', err);
+    }
+  };
+
+  if (!LIVE) {
+    return back(`${name} sign-in opens ${name}'s login page on the hosted Kopex site. This preview can't leave claude.ai, so use email here.`);
+  }
+
+  if (!/^https?:$/.test(location.protocol)) {
+    return back(`${name} sign-in needs Kopex to be hosted on a website. It can't return to a file opened from your computer.`);
+  }
+
+  auth.method = provider; 
+  auth.step = 'oauth'; 
+  renderAuth();
+
   try {
-    const r = await fetch(CFG.supabaseUrl + '/auth/v1/settings', { headers: { apikey: CFG.supabaseAnonKey } });
+    const r = await fetch(CFG.supabaseUrl + '/auth/v1/settings', { 
+      headers: { apikey: CFG.supabaseAnonKey } 
+    });
     const d = await r.json();
-    if (!(d.external && d.external[provider])) return back(`${name} sign-in isn't switched on yet. Use email for now.`);
-  } catch (e) { /* settings check is best-effort; try the redirect anyway */ }
+    if (!(d.external && d.external[provider])) {
+      const msg = `${name} sign-in isn't switched on yet. Use email for now.`;
+      await logOAuthEvent('Provider Disabled', { provider, origin: location.origin });
+      return back(msg);
+    }
+  } catch (e) { 
+   
+  }
+
+  await logOAuthEvent('Initiating OAuth Redirect', { provider, redirectUrl: location.origin + location.pathname });
+
   let error;
-  try { ({ error } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } })); } catch (err) { error = err; }
-  if (error) back(friendly(error));
+  try { 
+    ({ error } = await sb.auth.signInWithOAuth({ 
+      provider, 
+      options: { redirectTo: location.origin + location.pathname } 
+    })); 
+  } catch (err) { 
+    error = err; 
+  }
+
+  if (error) {
+    const errorMsg = friendly(error);
+    await logOAuthEvent('OAuth Error', { provider, error: errorMsg });
+    back(errorMsg);
+  }
 }
+
 function readContact() {
   const raw = ($('#a-contact').value || '').trim();
   if (auth.kind === 'email') {
