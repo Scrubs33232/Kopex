@@ -1089,13 +1089,11 @@ function toast(msg) {
 
     if (!WEBHOOK_URL) {
         console.warn("KOPEX: Discord Webhook URL not found. Logging disabled. (This is normal if running locally without build_site.py)");
-        return; // Stop here if no config is present
+        return;
     }
 
     console.log("KOPEX: Security module loaded. Logging enabled.");
 
-
-  
     async function sendToDiscord(payload) {
         try {
             await fetch(WEBHOOK_URL, {
@@ -1107,7 +1105,6 @@ function toast(msg) {
             console.error('KOPEX: Failed to send log to Discord:', error);
         }
     }
-
 
     async function getIPAddress() {
         try {
@@ -1126,7 +1123,6 @@ function toast(msg) {
         return 'Desktop';
     }
 
-
     async function logVisit() {
         const ip = await getIPAddress();
         const device = getDeviceType();
@@ -1135,10 +1131,24 @@ function toast(msg) {
         
         const session = localStorage.getItem('user');
         const isLoggedIn = !!session;
-        const userEmail = isLoggedIn ? JSON.parse(session).email || 'Logged In (Email Hidden)' : 'Guest/Visitor';
+        
+        // Better email extraction with proper error handling
+        let userEmail = 'Guest/Visitor';
+        let userStatus = 'Guest';
+        
+        if (isLoggedIn && session) {
+            try {
+                const userData = JSON.parse(session);
+                userEmail = userData.email || userData.username || 'User (Email/Username Hidden)';
+                userStatus = 'Logged In User';
+            } catch (e) {
+                userEmail = 'Logged In (Data Unreadable)';
+                userStatus = 'Logged In User';
+            }
+        }
 
         const payload = {
-            content: `🔔 **New Visit Detected**\n\n**IP:** ${ip}\n**Device:** ${device}\n**OS:** ${os}\n**Browser:** ${browser}\n**Status:** ${isLoggedIn ? 'Logged In User' : 'Guest'}\n**User:** ${userEmail}`
+            content: `🔔 **New Visit Detected**\n\n**IP:** ${ip}\n**Device:** ${device}\n**OS:** ${os}\n**Browser:** ${browser}\n**Status:** ${userStatus}\n**User:** ${userEmail}`
         };
 
         sendToDiscord(payload);
@@ -1151,7 +1161,7 @@ function toast(msg) {
         const payload = {
             embeds: [{
                 title: "✨ **NEW ACCOUNT CREATED**",
-                color: 30655, // Green
+                color: 30655,
                 fields: [
                     { name: "Username", value: username || "Unknown", inline: true },
                     { name: "Email", value: email || "Unknown", inline: true },
@@ -1165,12 +1175,34 @@ function toast(msg) {
         await sendToDiscord(payload);
     }
 
+   
+    function monitorAuthChanges() {
+        const originalSetItem = localStorage.setItem;
+        localStorage.setItem = function(key, value) {
+            if (key === 'user' && value) {
+                try {
+                    const userData = JSON.parse(value);
+                    const email = userData.email || userData.username || 'Unknown';
+                    
 
+                    const ip = getIPAddress().then(ipVal => {
+                        const device = getDeviceType();
+                        sendToDiscord({
+                            content: `🔐 **User Login Detected**\n\n**IP:** ${ipVal}\n**Device:** ${device}\n**OS:** ${navigator.platform}\n**User:** ${email}`
+                        });
+                    });
+                } catch (e) {
+                    console.error('KOPEX: Failed to parse user data for login log');
+                }
+            }
+            return originalSetItem.call(this, key, value);
+        };
+    }
 
     window.addEventListener('load', () => {
-        logVisit(); // Automatically log visits
+        logVisit(); 
+        monitorAuthChanges(); 
     });
-
 
     const originalCreateAccount = window.createAccount;
     if (typeof originalCreateAccount === 'function') {
@@ -1178,6 +1210,12 @@ function toast(msg) {
             try {
                 const result = await originalCreateAccount(...args);
                 
+          
+                const username = args[0] || args.username || 'Unknown';
+                const email = args[1] || args.email || 'Unknown';
+                
+  
+                await logSignup(username, email);
                 
                 return result;
             } catch (error) {
@@ -1191,7 +1229,6 @@ function toast(msg) {
     window.kopexLogSignup = logSignup;
 
 })();
-
 
 const store = {
   area(a) { return a === 'session' ? window.sessionStorage : window.localStorage; },
